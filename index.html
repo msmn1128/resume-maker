@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 外部への通信を一切禁止（入力データが外に出ないことをブラウザ側で保証） -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<title>履歴書メーカー</title>
+<style>
+:root { --accent:#1f5fbf; --line:#222; --bg:#f3f4f6; }
+* { box-sizing:border-box; }
+body { margin:0; font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif; background:var(--bg); color:#111; }
+.ui { font-family:-apple-system,"Hiragino Sans","Yu Gothic",sans-serif; }
+.app { display:grid; grid-template-columns:minmax(320px,440px) 1fr; min-height:100vh; }
+.panel { background:#fff; border-right:1px solid #ddd; padding:20px; overflow-y:auto; height:100vh; position:sticky; top:0; }
+.panel h1 { font-size:20px; margin:0 0 4px; }
+.privacy { font-size:12px; color:#355; background:#eef7f0; border:1px solid #cfe5d4; border-radius:8px; padding:8px 10px; margin:8px 0 16px; line-height:1.6; }
+fieldset { border:1px solid #e1e1e1; border-radius:10px; margin:0 0 14px; padding:10px 12px 12px; }
+legend { font-size:13px; font-weight:700; padding:0 6px; color:var(--accent); }
+label { display:block; font-size:12px; color:#555; margin:8px 0 3px; }
+input[type=text], input[type=date], input[type=tel], input[type=email], textarea, select {
+  width:100%; padding:8px 9px; font-size:14px; border:1px solid #ccc; border-radius:6px; font-family:inherit; background:#fff; }
+textarea { resize:vertical; min-height:70px; }
+.row2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
+.row2 > div { min-width:0; }
+.photo-row > div:last-child { min-width:0; }
+.hrow { display:grid; grid-template-columns:62px 44px 1fr 28px; gap:4px; margin-bottom:5px; }
+.hrow input { padding:6px; font-size:13px; }
+button { font-family:inherit; cursor:pointer; border-radius:6px; border:1px solid #bbb; background:#fff; padding:6px 10px; font-size:12px; }
+button:hover { background:#f0f0f0; }
+button.primary { background:var(--accent); color:#fff; border-color:var(--accent); font-size:15px; padding:11px 14px; width:100%; font-weight:700; }
+button.primary:hover { background:#174a96; }
+button.danger { color:#b3261e; border-color:#e6b8b4; }
+.btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.photo-row { display:flex; gap:10px; align-items:center; }
+.photo-thumb { width:60px; height:80px; border:1px dashed #aaa; background:#fafafa center/cover no-repeat; flex:none; }
+.note { font-size:11px; color:#777; margin-top:4px; line-height:1.5; }
+.preview { padding:24px; overflow:auto; }
+.preview-inner { display:flex; flex-direction:column; align-items:center; gap:20px; }
+
+/* ===== 履歴書本体（A4） ===== */
+.page { width:210mm; height:297mm; background:#fff; padding:12mm 14mm; box-shadow:0 2px 12px rgba(0,0,0,.18); font-size:11pt; position:relative; overflow:hidden; }
+.page table { border-collapse:collapse; width:100%; }
+.page td, .page th { border:1px solid var(--line); padding:0 2mm; vertical-align:middle; font-weight:normal; }
+.page .title { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:3mm; }
+.page .title h2 { font-size:22pt; letter-spacing:.6em; margin:0; font-weight:600; }
+.page .title .date { font-size:10pt; }
+.lbl { font-size:8.5pt; color:#333; text-align:center; background:#fff; white-space:nowrap; }
+.furi { font-size:8pt; height:6mm; }
+.name { font-size:18pt; height:15mm; }
+.cell-h { height:8mm; }
+.photo-box { width:30mm; height:40mm; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:8pt; color:#666; text-align:center; background:center/cover no-repeat; }
+.hist td { height:9.2mm; font-size:10.5pt; }
+.hist .yr { width:16mm; text-align:center; }
+.hist .mo { width:12mm; text-align:center; }
+.hist .center { text-align:center; letter-spacing:.5em; }
+.hist .right { text-align:right; }
+.lic td { height:9.2mm; font-size:10.5pt; }
+.big { vertical-align:top !important; padding:2mm 3mm !important; white-space:pre-wrap; font-size:10.5pt; line-height:1.6; }
+.sect-lbl { font-size:9pt; padding:1mm 0; }
+.warn { position:absolute; bottom:4mm; right:14mm; font-size:8pt; color:#b3261e; }
+
+@media (max-width:1100px) {
+  .app { grid-template-columns:1fr; }
+  .panel { height:auto; position:static; }
+  .preview { padding:12px; }
+  .page { zoom:.5; }
+}
+@media print {
+  @page { size:A4; margin:0; }
+  body { background:#fff; }
+  .panel { display:none !important; }
+  .app { display:block; }
+  .preview { padding:0; overflow:visible; }
+  .preview-inner { display:block; gap:0; }
+  .page { box-shadow:none; margin:0; zoom:1 !important; break-after:page; page-break-after:always; }
+  .page:last-child { break-after:auto; page-break-after:auto; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="panel ui">
+    <h1>履歴書メーカー</h1>
+    <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用PCでは使用後に「データを消去」を押してください。</div>
+
+    <button class="primary" id="btnPrint">PDFを出力（印刷 → PDFとして保存）</button>
+    <div class="note">印刷画面で送信先を「PDFに保存」にしてください。余白は「なし」、背景のグラフィックはオンを推奨。</div>
+    <div class="btns" style="margin-bottom:14px">
+      <button id="btnExport">バックアップ保存(JSON)</button>
+      <button id="btnImport">バックアップ読込</button>
+      <button id="btnClear" class="danger">データを消去</button>
+      <input type="file" id="fileImport" accept="application/json" hidden>
+    </div>
+
+    <fieldset><legend>基本情報</legend>
+      <label>日付（作成日）</label><input type="date" id="f_date">
+      <div class="row2">
+        <div><label>ふりがな</label><input type="text" id="f_furigana" autocomplete="off"></div>
+        <div><label>氏名</label><input type="text" id="f_name" autocomplete="off"></div>
+      </div>
+      <div class="row2">
+        <div><label>生年月日</label><input type="date" id="f_birth"></div>
+        <div><label>性別（任意）</label>
+          <select id="f_gender"><option value="">未記入</option><option>男</option><option>女</option><option>その他</option></select></div>
+      </div>
+      <label>顔写真（任意・端末内のみで処理）</label>
+      <div class="photo-row">
+        <div class="photo-thumb" id="photoThumb"></div>
+        <div><input type="file" id="f_photo" accept="image/*"> <button id="btnPhotoDel">削除</button></div>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>連絡先</legend>
+      <label>現住所 ふりがな</label><input type="text" id="f_addrFurigana" autocomplete="off">
+      <label>現住所</label><input type="text" id="f_addr" autocomplete="off">
+      <div class="row2">
+        <div><label>電話</label><input type="tel" id="f_tel" autocomplete="off"></div>
+        <div><label>メール</label><input type="email" id="f_email" autocomplete="off"></div>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>学歴・職歴</legend>
+      <div id="histList"></div>
+      <div class="btns">
+        <button data-add="row">＋行を追加</button>
+        <button data-add="学歴">＋「学歴」見出し</button>
+        <button data-add="職歴">＋「職歴」見出し</button>
+        <button data-add="以上">＋「以上」</button>
+      </div>
+      <div class="note">年・月を空にすると、内容だけの行（見出し等）になります。「学歴」「職歴」は中央揃い、「以上」は右寄せで表示します。1ページ目は14行まで。</div>
+    </fieldset>
+
+    <fieldset><legend>免許・資格</legend>
+      <div id="licList"></div>
+      <div class="btns"><button data-add="lic">＋行を追加</button></div>
+    </fieldset>
+
+    <fieldset><legend>志望動機・自己PR</legend>
+      <textarea id="f_motive" rows="6"></textarea>
+    </fieldset>
+    <fieldset><legend>本人希望記入欄</legend>
+      <textarea id="f_wish" rows="4"></textarea>
+    </fieldset>
+  </aside>
+
+  <main class="preview">
+    <div class="preview-inner" id="pages"></div>
+  </main>
+</div>
+
+<script>
+(() => {
+  const KEY = 'resume-maker-v1';
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  const blank = () => ({
+    date: new Date().toISOString().slice(0,10),
+    furigana:'', name:'', birth:'', gender:'', photo:'',
+    addrFurigana:'', addr:'', tel:'', email:'',
+    hist:[{y:'',m:'',t:''}], lic:[{y:'',m:'',t:''}],
+    motive:'', wish:''
+  });
+
+  let data = load();
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) return Object.assign(blank(), JSON.parse(raw));
+    } catch (e) {}
+    return blank();
+  }
+  let timer;
+  function save() {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { alert('保存に失敗しました（容量不足の可能性）。写真を小さくするか不要データを消してください。'); }
+    }, 250);
+  }
+
+  const simple = ['date','furigana','name','birth','gender','addrFurigana','addr','tel','email','motive','wish'];
+  simple.forEach(k => {
+    const el = $('f_' + k);
+    el.addEventListener('input', () => { data[k] = el.value; save(); render(); });
+  });
+
+  function fillForm() {
+    simple.forEach(k => $('f_' + k).value = data[k] || '');
+    buildList('hist'); buildList('lic'); updateThumb();
+  }
+
+  function buildList(kind) {
+    const box = $(kind === 'hist' ? 'histList' : 'licList');
+    box.textContent = '';
+    data[kind].forEach((r, i) => {
+      const row = document.createElement('div'); row.className = 'hrow';
+      const mk = (key, ph, inputmode) => {
+        const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = ph; inp.value = r[key]; inp.autocomplete = 'off';
+        if (inputmode) inp.inputMode = inputmode;
+        inp.addEventListener('input', () => { r[key] = inp.value; save(); render(); });
+        return inp;
+      };
+      const del = document.createElement('button'); del.textContent = '×'; del.title = '削除';
+      del.addEventListener('click', () => { data[kind].splice(i,1); if (!data[kind].length) data[kind].push({y:'',m:'',t:''}); save(); buildList(kind); render(); });
+      row.append(mk('y','年','numeric'), mk('m','月','numeric'), mk('t','内容'), del);
+      box.appendChild(row);
+    });
+  }
+
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-add]'); if (!a) return;
+    const v = a.dataset.add;
+    if (v === 'lic') data.lic.push({y:'',m:'',t:''});
+    else if (v === 'row') data.hist.push({y:'',m:'',t:''});
+    else {
+      // 空の最終行があれば再利用
+      const last = data.hist[data.hist.length-1];
+      if (last && !last.y && !last.m && !last.t) last.t = v; else data.hist.push({y:'',m:'',t:v});
+    }
+    save(); buildList(v === 'lic' ? 'lic' : 'hist'); render();
+  });
+
+  // ---- 写真（縮小してJPEG化、端末内のみ） ----
+  $('f_photo').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (!f.type.startsWith('image/')) { alert('画像ファイルを選んでください'); return; }
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      const W = 300, H = 400;
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      // cover でトリミング（3:4）
+      const s = Math.max(W / img.width, H / img.height);
+      const w = img.width * s, h = img.height * s;
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
+      ctx.drawImage(img, (W-w)/2, (H-h)/2, w, h);
+      data.photo = c.toDataURL('image/jpeg', 0.85);
+      URL.revokeObjectURL(url); save(); updateThumb(); render();
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); alert('画像を読み込めませんでした'); };
+    img.src = url; e.target.value = '';
+  });
+  $('btnPhotoDel').addEventListener('click', () => { data.photo = ''; save(); updateThumb(); render(); });
+  function updateThumb() { $('photoThumb').style.backgroundImage = data.photo ? `url("${data.photo}")` : ''; }
+
+  // ---- バックアップ / 消去 ----
+  $('btnExport').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'resume-backup.json'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  $('btnImport').addEventListener('click', () => $('fileImport').click());
+  $('fileImport').addEventListener('change', e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try { data = Object.assign(blank(), JSON.parse(r.result)); save(); fillForm(); render(); }
+      catch { alert('読み込めないファイルです'); }
+    };
+    r.readAsText(f); e.target.value = '';
+  });
+  $('btnClear').addEventListener('click', () => {
+    if (!confirm('この端末に保存された入力内容をすべて消去します。よろしいですか？')) return;
+    localStorage.removeItem(KEY); data = blank(); fillForm(); render();
+  });
+  $('btnPrint').addEventListener('click', () => window.print());
+
+  // ---- プレビュー描画 ----
+  const ymd = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? {y:+m[1], mo:+m[2], d:+m[3]} : null; };
+  const age = b => { const d = new Date(), x = ymd(b); if (!x) return ''; let a = d.getFullYear() - x.y; if (d.getMonth()+1 < x.mo || (d.getMonth()+1 === x.mo && d.getDate() < x.d)) a--; return a; };
+
+  const HIST_ROWS = 14, LIC_ROWS = 6;
+
+  function histRows(list, n) {
+    let html = '';
+    const rows = list.filter(r => r.y || r.m || r.t);
+    const total = Math.max(n, rows.length);
+    for (let i = 0; i < total; i++) {
+      const r = rows[i] || {y:'',m:'',t:''};
+      const cls = (!r.y && !r.m && (r.t === '学歴' || r.t === '職歴')) ? 'center' : (!r.y && !r.m && r.t === '以上') ? 'right' : '';
+      html += `<tr><td class="yr">${esc(r.y)}</td><td class="mo">${esc(r.m)}</td><td class="${cls}">${esc(r.t)}</td></tr>`;
+    }
+    return {html, over: rows.length > n};
+  }
+
+  function render() {
+    const d = data, dt = ymd(d.date), b = ymd(d.birth);
+    const dateStr = dt ? `${dt.y}年 ${dt.mo}月 ${dt.d}日 現在` : '　　年　　月　　日 現在';
+    const birthStr = b ? `${b.y}年 ${b.mo}月 ${b.d}日生（満 ${age(d.birth)} 歳）` : '　　年　　月　　日生（満　　歳）';
+    const photo = d.photo ? `style="background-image:url('${d.photo}')"` : '';
+    const h = histRows(d.hist, HIST_ROWS);
+    const l = histRows(d.lic, LIC_ROWS);
+
+    const p1 = `
+<section class="page">
+  <div class="title"><h2>履歴書</h2><div class="date">${esc(dateStr)}</div></div>
+  <table style="margin-bottom:0">
+    <tr>
+      <td class="lbl" style="width:22mm">ふりがな</td>
+      <td class="furi" colspan="2">${esc(d.furigana)}</td>
+      <td rowspan="4" style="width:34mm;border:none;padding:0 0 0 4mm;vertical-align:top"><div class="photo-box" ${photo}>${d.photo ? '' : '写真をはる位置<br>縦40mm 横30mm'}</div></td>
+    </tr>
+    <tr><td class="lbl">氏　名</td><td class="name" colspan="2">${esc(d.name)}</td></tr>
+    <tr><td class="lbl">生年月日</td><td class="cell-h" style="width:80mm">${esc(birthStr)}</td><td class="cell-h" style="text-align:center">${d.gender ? '性別 ' + esc(d.gender) : '性別'}</td></tr>
+    <tr><td class="lbl" style="height:4mm"></td><td colspan="2" style="border:none"></td></tr>
+  </table>
+  <table style="margin-top:-1px">
+    <tr><td class="lbl" style="width:22mm">ふりがな</td><td class="furi">${esc(d.addrFurigana)}</td><td class="lbl" rowspan="2" style="width:12mm">電話</td><td rowspan="2" style="width:48mm">${esc(d.tel)}</td></tr>
+    <tr><td class="lbl" style="height:16mm">現住所</td><td>${esc(d.addr)}</td></tr>
+    <tr><td class="lbl cell-h">メール</td><td colspan="3">${esc(d.email)}</td></tr>
+  </table>
+  <table class="hist" style="margin-top:3mm">
+    <tr><th class="lbl yr" style="height:8mm">年</th><th class="lbl mo">月</th><th class="lbl">学歴・職歴（各別にまとめて書く）</th></tr>
+    ${h.html}
+  </table>
+  ${h.over ? '<div class="warn">※行数が多く、1ページに収まらない可能性があります</div>' : ''}
+</section>`;
+
+    const p2 = `
+<section class="page">
+  <table class="lic">
+    <tr><th class="lbl yr" style="height:8mm">年</th><th class="lbl mo">月</th><th class="lbl">免許・資格</th></tr>
+    ${l.html}
+  </table>
+  <table style="margin-top:4mm">
+    <tr><td class="lbl sect-lbl" style="text-align:left;padding-left:2mm">志望の動機、特技、好きな学科、アピールポイントなど</td></tr>
+    <tr><td class="big" style="height:95mm">${esc(d.motive)}</td></tr>
+  </table>
+  <table style="margin-top:4mm">
+    <tr><td class="lbl sect-lbl" style="text-align:left;padding-left:2mm">本人希望記入欄（特に給料・職種・勤務時間・勤務地・その他についての希望などがあれば記入）</td></tr>
+    <tr><td class="big" style="height:55mm">${esc(d.wish)}</td></tr>
+  </table>
+</section>`;
+
+    $('pages').innerHTML = p1 + p2;
+  }
+
+  fillForm(); render();
+})();
+</script>
+</body>
+</html>
