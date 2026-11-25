@@ -122,15 +122,17 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   .preview { padding:12px; }
   .page { zoom:.5; }
 }
+.spread { display:flex; flex-direction:column; align-items:center; gap:20px; }
+/* 印刷：B4(257×364mm)横に、A4縦2ページを見開きで1枚にまとめる（420×297mm → 86%に縮小） */
 @media print {
-  @page { size:A4; margin:0; }
-  body { background:#fff; }
+  @page { size:364mm 257mm; margin:0; }
+  html, body { background:#fff; width:364mm; height:257mm; overflow:hidden; }
   .panel { display:none !important; }
   .app { display:block; }
   .preview { padding:0; overflow:visible; }
   .preview-inner { display:block; gap:0; }
-  .page { box-shadow:none; margin:0; zoom:1 !important; break-after:page; page-break-after:always; }
-  .page:last-child { break-after:auto; page-break-after:auto; }
+  .spread { display:flex; flex-direction:row; align-items:flex-start; gap:0; width:420mm; height:297mm; zoom:.86; margin:.9mm 0 0 1.6mm; }
+  .page { box-shadow:none; margin:0; zoom:1 !important; flex:none; }
 }
 </style>
 </head>
@@ -141,7 +143,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用PCでは使用後に「データを消去」を押してください。</div>
 
     <button class="primary" id="btnPrint">PDFを出力（印刷 → PDFとして保存）</button>
-    <div class="note">印刷画面で送信先を「PDFに保存」、用紙サイズを A4、余白を「なし」にしてください（2ページ出力されます）。</div>
+    <div class="note">印刷画面で送信先を「PDFに保存」にしてください。用紙サイズは自動でB4横（1枚）になります。余白は「なし」、倍率は「100%（デフォルト）」にしてください。</div>
     <div class="btns" style="margin-bottom:14px">
       <button id="btnExport">バックアップ保存(JSON)</button>
       <button id="btnImport">バックアップ読込</button>
@@ -452,7 +454,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   </div>
 </div></section>`;
 
-    $('pages').innerHTML = p1 + p2;
+    $('pages').innerHTML = `<div class="spread">${p1}${p2}</div>`;
 
     $('histNote').textContent = h.over ? `${HIST_ROWS}行を超えた分は出力されません。` : '';
     $('licNote').textContent = l.over ? `${LIC_ROWS}行を超えた分は出力されません。` : '';
