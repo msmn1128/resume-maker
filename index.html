@@ -902,10 +902,10 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       const used = text ? lineCount(el) : 0;
       const over = el.scrollHeight > el.clientHeight + 1;
       const short = key !== 'remarks' && used < p.lines;
-      const guide = key === 'remarks' ? `約${p.cap}文字まで` : `目安 ${p.lo}〜${p.hi}文字`;
+      const guide = key === 'remarks' ? `目安 ${Math.floor(p.cap / 10) * 10}文字まで` : `目安 ${p.lo}〜${p.hi}文字`;
       $('cnt_' + key).textContent = `${guide}　現在 ${Math.ceil(weight(text))}文字`;
       $('cnt_' + key).className = 'note' + (over || short ? ' err' : '');
-      if (over) errs.push(`「${p.label}」が枠に収まりません（${key === 'remarks' ? '約' + p.cap : p.lo + '〜' + p.hi}文字が目安）`);
+      if (over) errs.push(`「${p.label}」が枠に収まりません（${key === 'remarks' ? '' + Math.floor(p.cap / 10) * 10 : p.lo + '〜' + p.hi}文字が目安）`);
       else if (short) errs.push(`「${p.label}」が最後の行（${p.lines}行目）まで届きません（目安${p.lo}〜${p.hi}文字）`);
     });
     $('errNote').innerHTML = errs.map(e => `<div>⚠ ${esc(e)}</div>`).join('');
