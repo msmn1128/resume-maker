@@ -137,7 +137,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <div class="note err" id="errNote"></div>
       <div class="pdfres" id="pdfResult"></div>
       <button class="primary" id="btnPdf">PDFを作成して保存</button>
-      <div class="note" id="pdfInfo">B4横1枚のPDFを、この端末の中だけで作ります（スマホ・パソコン共通）。</div>
+      <div class="note" id="pdfInfo">B4横1枚のPDFを、この端末の中だけで作り、ダウンロードフォルダに保存します。</div>
     </div>
     <h1>履歴書メーカー</h1>
     <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用の端末では使用後に「データを消去」を押してください。</div>
@@ -665,15 +665,13 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       const file = new File([blob], '履歴書.pdf', {type:'application/pdf'});
       const mb = (blob.size / 1048576).toFixed(1);
       res.append(document.createTextNode(`作成しました（${mb}MB）`));
-      const a = h('a', {href:pdfUrl, download:'履歴書.pdf', textContent:'ダウンロード'}); res.append(a);
-      const canShare = touchDevice() && navigator.canShare && navigator.canShare({files:[file]});
-      if (canShare) {
-        const sb = h('button', {textContent:'共有・保存'});
+      const a = h('a', {href:pdfUrl, download:'履歴書.pdf', textContent:'もう一度保存'}); res.append(a);
+      a.click();                                                           // 端末のダウンロードフォルダに保存（保存先はブラウザの設定に従います）
+      res.append(document.createTextNode('　ダウンロードフォルダに保存しました'));
+      if (touchDevice() && navigator.canShare && navigator.canShare({files:[file]})) {   // 共有（LINE・メールなど）は、ボタンを押したときだけ
+        const sb = h('button', {textContent:'共有する'});
         sb.addEventListener('click', () => navigator.share({files:[file], title:'履歴書'}).catch(() => {}));
         res.append(sb);
-        navigator.share({files:[file], title:'履歴書'}).catch(() => {});   // 作成直後に共有画面を開く
-      } else if (!touchDevice()) {
-        a.click();                                                         // パソコンでは自動でダウンロード
       }
     } catch (e) {
       res.textContent = 'PDFを作成できませんでした。お使いのブラウザでは「印刷画面を開く」から保存してください。';
