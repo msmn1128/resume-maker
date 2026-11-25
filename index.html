@@ -67,12 +67,11 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .t.c { justify-content:center; }
 .t.r { justify-content:flex-end; }
 .t.fit { overflow:hidden; }
-.t.af { overflow:hidden; }
+.t.af { overflow:hidden; padding-top:4.8mm; }   /* 郵便番号の行の下に余白を確保し、残りの枠の中央に住所を置く */
 .t.af .afi { width:100%; }
-.t.af.multi { align-items:flex-start; }
-.t.af.multi .afi { padding-top:4.6mm; }
+.t.af.multi { align-items:flex-start; padding-top:5.3mm; }
 .t.tb { display:block; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; padding:0 1.7mm; }
-.addr { line-height:4.4mm; white-space:normal; overflow-wrap:anywhere; }
+.addr { line-height:4.2mm; white-space:normal; overflow-wrap:anywhere; }
 
 @media (max-width:1100px) {
   .app { grid-template-columns:1fr; }
@@ -460,9 +459,9 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 
     T(L.x1 + 2, Y[3], L.x3 - L.x1 - 3, Y[4] - Y[3], esc(d.addrFurigana), '', fs(8.5));
     const zipRow = (yTop, zip) => {   // 〒(　　-　　)
-      T(41.3, yTop + 1.0, 6, 3.8, '〒(', '', fs(9));
-      T(46.9, yTop + 1.0, 16, 3.8, esc(zip), 'c', fs(9));
-      T(71.4, yTop + 1.0, 3, 3.8, ')', '', fs(9));
+      T(41.3, yTop + 0.7, 6, 3.8, '〒(', '', fs(9));
+      T(46.9, yTop + 0.7, 16, 3.8, esc(zip), 'c', fs(9));
+      T(71.4, yTop + 0.7, 3, 3.8, ')', '', fs(9));
     };
     const addrBox = (yA, yB, text, lbl) =>
       T(L.x1 + 2, yA, L.x3 - L.x1 - 4, yB - yA, `<div class="afi"><span class="addr">${esc(text)}</span></div>`, 'af fit', fs(10) + `" data-lbl="${lbl}`);
