@@ -381,16 +381,14 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       return zipMap;
     }).catch(() => { zipLoading = null; return null; }));
   }
-  const autoFilled = {};   // 自動入力した住所（あとから手で直した住所は上書きしない）
   async function zipToAddr(zipKey, addrKey, kanaKey) {
     if (!okNum(data[zipKey])) return;
     const z = digits(data[zipKey]); if (z.length !== 7) return;
     const m = await loadZip(); const rec = m && m.get(z); if (!rec) return;
     if (digits(data[zipKey]) !== z) return;                       // 待っている間に番号が変わった
-    const put = (key, val) => {                                   // 空か、前回の自動入力のままの欄だけ入れる（手で入力済みは上書きしない）
-      const cur = data[key] || '';
-      if (!val || (cur && cur !== autoFilled[key])) return false;
-      autoFilled[key] = val; data[key] = val; $('f_' + key).value = val; return true;
+    const put = (key, val) => {                                   // 郵便番号を入れ直したら、住所・ふりがなは上書きする
+      if (!val) return false;
+      data[key] = val; $('f_' + key).value = val; return true;
     };
     const okA = put(addrKey, rec.addr); put(kanaKey, rec.kana);
     save(); render();
