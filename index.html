@@ -42,6 +42,8 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .note.err { color:#b3261e; font-weight:600; }
 .note.warn { color:#9a6700; }
 .msgs { margin:8px 0 12px; }
+.pdfres { margin:6px 0; display:flex; gap:8px; flex-wrap:wrap; align-items:center; font-size:13px; }
+.pdfres a { color:var(--accent); font-weight:700; }
 .msgs div { margin:3px 0; }
 .card { border:1px solid #e3e3e3; border-radius:8px; padding:6px; margin-bottom:6px; background:#fafafa; }
 .card.head { display:flex; align-items:center; gap:6px; font-size:13px; }
@@ -95,8 +97,11 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     <h1>履歴書メーカー</h1>
     <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用PCでは使用後に「データを消去」を押してください。</div>
 
-    <button class="primary" id="btnPrint">PDFを出力（印刷 → PDFとして保存）</button>
-    <div class="note">印刷画面で送信先を「PDFに保存」にしてください。用紙サイズは自動でB4横（1枚）になります。余白は「なし」、倍率は「100%（デフォルト）」にしてください。</div>
+    <button class="primary" id="btnPdf">PDFを作成して保存</button>
+    <div class="note" id="pdfInfo">B4横1枚のPDFファイルを、この端末の中だけで作ります（スマホ・パソコン共通）。</div>
+    <div class="pdfres" id="pdfResult"></div>
+    <div class="btns"><button id="btnPrint">印刷画面を開く（パソコン向け）</button></div>
+    <div class="note">印刷画面を使う場合は、送信先を「PDFに保存」、余白を「なし」、倍率を「100%」にしてください。</div>
     <div class="btns" style="margin-bottom:10px">
       <button id="btnExport">バックアップ保存(JSON)</button>
       <button id="btnImport">バックアップ読込</button>
@@ -369,6 +374,130 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   document.fonts.ready.then(render);
   window.addEventListener('resize', fitPreview);
 
+
+  // ================= PDFをアプリ内で作る（外部通信なし） =================
+  // プレビュー(DOM+SVG)の見た目をそのままキャンバスに描き、JPEGにしてB4横1ページのPDFに包む。
+  // 文字は、DOMが決めた1文字ごとの位置を読み取って描くので、画面と同じ折り返し・配置になる。
+  const PX_PER_MM = 10;                       // 10px/mm（約254dpi）
+  async function renderCanvas() {
+    await document.fonts.ready;
+    const sp = $('spread');
+    const oldZoom = sp.style.zoom;
+    sp.style.zoom = '1';                      // 測定中だけ等倍にする
+    try {
+      const W = 364 * PX_PER_MM, H = 257 * PX_PER_MM;
+      const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+
+      // 罫線（SVGの図形をそのまま描く。座標はmm）
+      ctx.save(); ctx.scale(PX_PER_MM, PX_PER_MM); ctx.strokeStyle = '#000'; ctx.lineCap = 'butt';
+      sp.querySelectorAll('svg > *').forEach(n => {
+        ctx.lineWidth = parseFloat(n.getAttribute('stroke-width')) || .25;
+        ctx.strokeStyle = n.getAttribute('stroke') || '#000';
+        const dash = n.getAttribute('stroke-dasharray');
+        ctx.setLineDash(dash ? dash.split(/\s+/).map(Number) : []);
+        if (n.tagName === 'line') {
+          ctx.beginPath(); ctx.moveTo(+n.getAttribute('x1'), +n.getAttribute('y1')); ctx.lineTo(+n.getAttribute('x2'), +n.getAttribute('y2')); ctx.stroke();
+        } else if (n.tagName === 'rect') {
+          ctx.strokeRect(+n.getAttribute('x'), +n.getAttribute('y'), +n.getAttribute('width'), +n.getAttribute('height'));
+        } else if (n.tagName === 'path') {
+          ctx.lineJoin = 'miter'; ctx.stroke(new Path2D(n.getAttribute('d')));
+        }
+      });
+      ctx.restore();
+
+      // 文字と写真
+      const base = sp.getBoundingClientRect();
+      const k = PX_PER_MM * 25.4 / 96;        // CSS px → キャンバスpx
+      ctx.textBaseline = 'alphabetic'; ctx.setLineDash([]);
+      for (const el of sp.querySelectorAll('.t')) {
+        const m = /url\(["']?(data:[^"')]+)["']?\)/.exec(el.style.background || el.style.backgroundImage || '');
+        if (m) {
+          const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = m[1]; });
+          const r = el.getBoundingClientRect();
+          ctx.drawImage(img, (r.left - base.left) * k, (r.top - base.top) * k, r.width * k, r.height * k);
+        }
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+        for (let node; (node = walker.nextNode());) {
+          const cs = getComputedStyle(node.parentElement);
+          ctx.font = `${parseFloat(cs.fontSize) * k}px ${cs.fontFamily}`;
+          ctx.fillStyle = cs.color;
+          const ascent = ctx.measureText('あ').fontBoundingBoxAscent;
+          const text = node.textContent, range = document.createRange();
+          for (let i = 0; i < text.length; i++) {
+            if (/\s/.test(text[i])) continue;
+            range.setStart(node, i); range.setEnd(node, i + 1);
+            const r = range.getClientRects()[0];
+            if (!r || r.width === 0) continue;
+            ctx.fillText(text[i], (r.left - base.left) * k, (r.top - base.top) * k + ascent);
+          }
+        }
+      }
+      return cv;
+    } finally { sp.style.zoom = oldZoom; }
+  }
+
+  // JPEG 1枚をB4横(364×257mm)1ページに貼っただけの、最小構成のPDF
+  function wrapPdf(jpeg, pxW, pxH) {
+    const enc = new TextEncoder();
+    const ptW = (364 / 25.4 * 72).toFixed(2), ptH = (257 / 25.4 * 72).toFixed(2);
+    const content = enc.encode(`q ${ptW} 0 0 ${ptH} 0 0 cm /Im0 Do Q`);
+    const parts = [], offsets = [];
+    let pos = 0;
+    const push = b => { const u = typeof b === 'string' ? enc.encode(b) : b; parts.push(u); pos += u.length; };
+    const obj = (n, body) => { offsets[n] = pos; push(`${n} 0 obj\n`); push(body); push('\nendobj\n'); };
+    push('%PDF-1.4\n');
+    obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+    obj(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    obj(3, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${ptW} ${ptH}] /Resources << /XObject << /Im0 4 0 R >> >> /Contents 5 0 R >>`);
+    offsets[4] = pos; push('4 0 obj\n');
+    push(`<< /Type /XObject /Subtype /Image /Width ${pxW} /Height ${pxH} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpeg.length} >>\nstream\n`);
+    push(jpeg); push('\nendstream\nendobj\n');
+    offsets[5] = pos; push('5 0 obj\n'); push(`<< /Length ${content.length} >>\nstream\n`); push(content); push('\nendstream\nendobj\n');
+    const xref = pos;
+    push('xref\n0 6\n0000000000 65535 f \n');
+    for (let n = 1; n <= 5; n++) push(String(offsets[n]).padStart(10, '0') + ' 00000 n \n');
+    push(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+    return new Blob(parts, {type:'application/pdf'});
+  }
+
+  async function buildPdf() {
+    const cv = await renderCanvas();
+    const jpegBlob = await new Promise((res, rej) => cv.toBlob(b => b ? res(b) : rej(new Error('toBlob')), 'image/jpeg', 0.95));
+    const jpeg = new Uint8Array(await jpegBlob.arrayBuffer());
+    return wrapPdf(jpeg, cv.width, cv.height);
+  }
+
+  let pdfUrl = null;
+  const touchDevice = () => matchMedia('(pointer:coarse)').matches;
+  $('btnPdf').addEventListener('click', async () => {
+    const btn = $('btnPdf'), res = $('pdfResult');
+    if (btn.disabled) return;
+    btn.disabled = true; btn.textContent = 'PDFを作成中…'; res.textContent = '';
+    try {
+      const blob = await buildPdf();
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
+      pdfUrl = URL.createObjectURL(blob);
+      const file = new File([blob], '履歴書.pdf', {type:'application/pdf'});
+      const mb = (blob.size / 1048576).toFixed(1);
+      res.append(document.createTextNode(`作成しました（${mb}MB）`));
+      const a = h('a', {href:pdfUrl, download:'履歴書.pdf', textContent:'ダウンロード'}); res.append(a);
+      const canShare = touchDevice() && navigator.canShare && navigator.canShare({files:[file]});
+      if (canShare) {
+        const sb = h('button', {textContent:'共有・保存'});
+        sb.addEventListener('click', () => navigator.share({files:[file], title:'履歴書'}).catch(() => {}));
+        res.append(sb);
+        navigator.share({files:[file], title:'履歴書'}).catch(() => {});   // 作成直後に共有画面を開く
+      } else if (!touchDevice()) {
+        a.click();                                                         // パソコンでは自動でダウンロード
+      }
+    } catch (e) {
+      res.textContent = 'PDFを作成できませんでした。お使いのブラウザでは「印刷画面を開く」から保存してください。';
+    } finally { check_buttons(); }
+  });
+  function check_buttons() { /* check()が最後に状態を反映する */ render(); }
+
   // ---- 描画 ----
   const ymd = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? {y:+m[1], mo:+m[2], d:+m[3]} : null; };
   const age = b => { const d = new Date(), x = ymd(b); if (!x) return ''; let a = d.getFullYear() - x.y; if (d.getMonth()+1 < x.mo || (d.getMonth()+1 === x.mo && d.getDate() < x.d)) a--; return a; };
@@ -594,9 +723,10 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     });
     $('errNote').innerHTML = errs.map(e => `<div>⚠ ${esc(e)}</div>`).join('');
     $('warnNote').innerHTML = warns.map(e => `<div>・${esc(e)}</div>`).join('');
-    const btn = $('btnPrint');
-    btn.disabled = errs.length > 0;
-    btn.textContent = errs.length ? 'エラーを直すとPDFを出力できます' : 'PDFを出力（印刷 → PDFとして保存）';
+    $('btnPrint').disabled = errs.length > 0;
+    const pb = $('btnPdf');
+    pb.disabled = errs.length > 0;
+    pb.textContent = errs.length ? 'エラーを直すとPDFを作成できます' : 'PDFを作成して保存';
   }
 
   fillForm(); render();
