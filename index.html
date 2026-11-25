@@ -700,7 +700,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     // 目安の文字数：最後の行に届く最少文字数〜枠いっぱいを、10文字刻みのキリのいい数字にする
     p.lo = Math.max(p.loMin || 0, Math.ceil(((p.lines - 1) * p.cpl + 1) / 10) * 10);   // loMin：最低でもこの文字数を目安にする
     p.hi = Math.floor(p.cap / 10) * 10;
-    if (key !== 'remarks') $('f_' + key).placeholder = `目安：${p.lo}〜${p.hi}文字（${p.lines}行目まで書く）`;
+    if (key !== 'remarks') $('f_' + key).placeholder = `目安：${p.lo}〜${p.hi}文字`;
   });
   const weight = s => [...s].reduce((a, c) => a + (c === '\n' ? 0 : (c.charCodeAt(0) < 256 ? 0.5 : 1)), 0);
 
@@ -902,11 +902,11 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       const used = text ? lineCount(el) : 0;
       const over = el.scrollHeight > el.clientHeight + 1;
       const short = key !== 'remarks' && used < p.lines;
-      const guide = key === 'remarks' ? `${p.lines}行 × ${p.cpl}文字 ＝ 約${p.cap}文字まで` : `目安 ${p.lo}〜${p.hi}文字（${p.lines}行 × ${p.cpl}文字）`;
-      $('cnt_' + key).textContent = `${guide}　現在 ${Math.ceil(weight(text))}文字・${used}行`;
+      const guide = key === 'remarks' ? `約${p.cap}文字まで` : `目安 ${p.lo}〜${p.hi}文字`;
+      $('cnt_' + key).textContent = `${guide}　現在 ${Math.ceil(weight(text))}文字`;
       $('cnt_' + key).className = 'note' + (over || short ? ' err' : '');
-      if (over) errs.push(`「${p.label}」が規定の${p.lines}行を超えています（${key === 'remarks' ? '約' + p.cap : p.lo + '〜' + p.hi}文字が目安）`);
-      else if (short) errs.push(`「${p.label}」が最後の行（${p.lines}行目）まで届きません（現在${used}行・目安${p.lo}〜${p.hi}文字）`);
+      if (over) errs.push(`「${p.label}」が枠に収まりません（${key === 'remarks' ? '約' + p.cap : p.lo + '〜' + p.hi}文字が目安）`);
+      else if (short) errs.push(`「${p.label}」が最後の行（${p.lines}行目）まで届きません（目安${p.lo}〜${p.hi}文字）`);
     });
     $('errNote').innerHTML = errs.map(e => `<div>⚠ ${esc(e)}</div>`).join('');
     $('warnNote').innerHTML = warns.map(e => `<div>・${esc(e)}</div>`).join('');
