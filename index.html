@@ -684,20 +684,19 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   const age = b => { const d = new Date(), x = ymd(b); if (!x) return ''; let a = d.getFullYear() - x.y; if (d.getMonth()+1 < x.mo || (d.getMonth()+1 === x.mo && d.getDate() < x.d)) a--; return a; };
 
   // 文章欄：{lines行 × 1行の文字数}を様式の寸法から算出（これが規定文字数）
-  // 文章欄はすべて8ptに統一（見た目をそろえるため）。1行の文字数・規定文字数はこのサイズから算出する。
+  // 文章欄の文字サイズ：趣味・特技・志望動機は10pt、備考は8pt。1行の文字数・規定文字数はこのサイズから算出する。
   const PROSE_PT = 8;
   const PROSE = {
-    hobby:   { label:'趣味・得意な学科・スポーツ等', w:G.R.x3 - G.R.x1, lines:7, lh:8.0 },
-    skill:   { label:'特技・自己啓発等',             w:G.R.x4 - G.R.x3, lines:7, lh:8.0 },
-    motive:  { label:'志望の動機',                   w:G.R.x4 - G.R.x1, lines:9, lh:(G.R.y3 - G.R.y2) / 9, loMin:370 },
+    hobby:   { label:'趣味・得意な学科・スポーツ等', w:G.R.x3 - G.R.x1, lines:8, lh:7.0, pt:10, lo:100, hi:120 },
+    skill:   { label:'特技・自己啓発等',             w:G.R.x4 - G.R.x3, lines:8, lh:7.0, pt:10, lo:100, hi:120 },
+    motive:  { label:'志望の動機',                   w:G.R.x4 - G.R.x1, lines:9, lh:(G.R.y3 - G.R.y2) / 9, pt:10, lo:280, hi:310 },
     remarks: { label:'備考',                         w:G.R.x4 - G.R.x1, lines:3, lh:6.0 }
   };
   Object.entries(PROSE).forEach(([key, p]) => {
-    p.pt = PROSE_PT;
+    p.pt = p.pt || PROSE_PT;
     p.cpl = Math.floor((p.w - 3.4) / (p.pt * PT)); p.cap = p.cpl * p.lines;
     // 目安の文字数：最後の行に届く最少文字数〜枠いっぱいを、10文字刻みのキリのいい数字にする
-    p.lo = Math.max(p.loMin || 0, Math.ceil(((p.lines - 1) * p.cpl + 1) / 10) * 10);   // loMin：最低でもこの文字数を目安にする
-    p.hi = Math.floor(p.cap / 10) * 10;
+    if (!p.lo) { p.lo = Math.ceil(((p.lines - 1) * p.cpl + 1) / 10) * 10; p.hi = Math.floor(p.cap / 10) * 10; }   // 目安（lo〜hi）は案内だけ。下限のエラーは出さない
     if (key !== 'remarks') $('f_' + key).placeholder = `目安：${p.lo}〜${p.hi}文字`;
   });
   const weight = s => [...s].reduce((a, c) => a + (c === '\n' ? 0 : (c.charCodeAt(0) < 256 ? 0.5 : 1)), 0);
@@ -747,7 +746,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     for (let k = 1; k < HIST_ROWS; k++) ln(L.x1, L.yB0 + k * pB, L.x4, L.yB0 + k * pB, .2, true);
     // 2ページ目
     const pL = (R.y1 - R.yh) / LIC_ROWS;
-    const pS3 = (R.y2 - R.y1) / 8, pS4 = (R.y3 - R.y2) / 9;
+    const pS3 = 8.0, pT3 = (R.y2 - R.y1 - pS3) / 8, pS4 = (R.y3 - R.y2) / 9;
     sv.push(`<rect x="${R.x0}" y="${R.y0}" width="${R.x4 - R.x0}" height="${R.y4 - R.y0}" fill="none" stroke="#000" stroke-width=".5"/>`);
     ln(R.x1, R.y0, R.x1, R.y4, .25);
     [R.y1, R.y2, R.y3].forEach(y => ln(R.x0, y, R.x4, y, .35));
@@ -755,7 +754,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     ln(R.x2, R.y0, R.x2, R.y1, .25);
     for (let k = 1; k < LIC_ROWS; k++) ln(R.x1, R.yh + k * pL, R.x4, R.yh + k * pL, .2, true);
     ln(R.x3, R.y1, R.x3, R.y2, .25);
-    for (let k = 1; k < 8; k++) ln(R.x1, R.y1 + k * pS3, R.x4, R.y1 + k * pS3, .2, true);
+    for (let k = 0; k < 8; k++) ln(R.x1, R.y1 + pS3 + k * pT3, R.x4, R.y1 + pS3 + k * pT3, .2, true);
     for (let k = 1; k < 9; k++) ln(R.x1, R.y2 + k * pS4, R.x4, R.y2 + k * pS4, .2, true);
 
     // ============ 1ページ目の文字 ============
@@ -874,8 +873,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     T(R.x1 + 1.7, R.y1, R.x3 - R.x1, pS3, '趣味・得意な学科・スポーツ等', '', fs(8.1));
     T(R.x3 + 1.7, R.y1, R.x4 - R.x3, pS3, '特技・自己啓発等', '', fs(8.1));
     const prose = (key, x, y, w, hh) => T(x, y, w, hh, esc(d[key]), 'tb', fs(PROSE[key].pt) + `line-height:${PROSE[key].lh}mm;` + `" data-prose="${key}`);
-    prose('hobby', R.x1, R.y1 + pS3, R.x3 - R.x1, pS3 * 7);
-    prose('skill', R.x3, R.y1 + pS3, R.x4 - R.x3, pS3 * 7);
+    prose('hobby', R.x1, R.y1 + pS3, R.x3 - R.x1, pT3 * 8);
+    prose('skill', R.x3, R.y1 + pS3, R.x4 - R.x3, pT3 * 8);
     prose('motive', R.x1, R.y2, R.x4 - R.x1, R.y3 - R.y2);
     prose('remarks', R.x1, R.y3, R.x4 - R.x1, R.y4 - R.y3);
 
@@ -917,12 +916,10 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       const text = data[key] || '';
       const used = text ? lineCount(el) : 0;
       const over = el.scrollHeight > el.clientHeight + 1 || used > p.lines;   // 枠の高さ、または規定の行数をこえたらエラー
-      const short = key !== 'remarks' && used < p.lines;
       const guide = key === 'remarks' ? `目安 ${Math.floor(p.cap / 10) * 10}文字まで` : `目安 ${p.lo}〜${p.hi}文字`;
       $('cnt_' + key).textContent = `${guide}　現在 ${Math.ceil(weight(text))}文字`;
-      $('cnt_' + key).className = 'note' + (over || short ? ' err' : '');
-      if (over) errs.push(`「${p.label}」が枠に収まりません（${key === 'remarks' ? '' + Math.floor(p.cap / 10) * 10 : p.lo + '〜' + p.hi}文字が目安）`);
-      else if (short) errs.push(`「${p.label}」が最後の行（${p.lines}行目）まで届きません（目安${p.lo}〜${p.hi}文字）`);
+      $('cnt_' + key).className = 'note' + (over ? ' err' : '');
+      if (over) errs.push(`「${p.label}」が枠に収まりません（${key === 'remarks' ? Math.floor(p.cap / 10) * 10 : p.hi}文字が目安）`);
     });
     $('errNote').innerHTML = errs.map(e => `<div>⚠ ${esc(e)}</div>`).join('');
     $('warnNote').innerHTML = warns.map(e => `<div>・${esc(e)}</div>`).join('');
