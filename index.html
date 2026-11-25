@@ -760,7 +760,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     // ふりがな欄：文字のまわりの余白を、上下左右ともそろえる（上下の余白は約1mm＝左右も同じ）
     const FM = 1.0;
     const LX = L.x1 + 0.95;   // 基本情報欄の文字の左端（ふりがな・氏名・住所・メールすべて共通）
-    const furi = (ya, yb, xr, txt) => T(LX, ya + 0.1, xr - LX - 0.9, yb - ya, esc(txt), '', fs(8.5));
+    const furi = (ya, yb, xr, txt) => T(L.x1, ya + 0.1, xr - L.x1, yb - ya, esc(txt), 'c', fs(8.5));   // ふりがなは欄の中央
     lab(0, 'ふりがな', 8); lab(1, '氏　名', 9.6); lab(2, '生年月日', 9.6); lab(3, 'ふりがな', 8);
     lab(4, '現住所', 9.6); lab(5, 'E-mailアドレス', 5.6); lab(6, 'ふりがな', 8); lab(7, '連絡先', 9.6);
 
