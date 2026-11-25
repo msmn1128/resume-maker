@@ -8,7 +8,7 @@
 <meta name="referrer" content="no-referrer">
 <title>履歴書メーカー</title>
 <style>
-:root { --accent:#1f5fbf; --line:#222; --bg:#f3f4f6; }
+:root { --accent:#1f5fbf; --bg:#f3f4f6; }
 * { box-sizing:border-box; }
 body { margin:0; font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif; background:var(--bg); color:#111; }
 .ui { font-family:-apple-system,"Hiragino Sans","Yu Gothic",sans-serif; }
@@ -16,7 +16,7 @@ body { margin:0; font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",
 .panel { background:#fff; border-right:1px solid #ddd; padding:20px; overflow-y:auto; height:100vh; position:sticky; top:0; }
 .panel h1 { font-size:20px; margin:0 0 4px; }
 .privacy { font-size:12px; color:#355; background:#eef7f0; border:1px solid #cfe5d4; border-radius:8px; padding:8px 10px; margin:8px 0 16px; line-height:1.6; }
-fieldset { border:1px solid #e1e1e1; border-radius:10px; margin:0 0 14px; padding:10px 12px 12px; }
+fieldset { border:1px solid #e1e1e1; border-radius:10px; margin:0 0 14px; padding:10px 12px 12px; min-width:0; }
 legend { font-size:13px; font-weight:700; padding:0 6px; color:var(--accent); }
 label { display:block; font-size:12px; color:#555; margin:8px 0 3px; }
 input[type=text], input[type=date], input[type=tel], input[type=email], textarea, select {
@@ -24,7 +24,6 @@ input[type=text], input[type=date], input[type=tel], input[type=email], textarea
 textarea { resize:vertical; min-height:70px; }
 .row2 { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; }
 .row2 > div { min-width:0; }
-.photo-row > div:last-child { min-width:0; }
 .hrow { display:grid; grid-template-columns:62px 44px 1fr 28px; gap:4px; margin-bottom:5px; }
 .hrow input { padding:6px; font-size:13px; }
 button { font-family:inherit; cursor:pointer; border-radius:6px; border:1px solid #bbb; background:#fff; padding:6px 10px; font-size:12px; }
@@ -34,32 +33,85 @@ button.primary:hover { background:#174a96; }
 button.danger { color:#b3261e; border-color:#e6b8b4; }
 .btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 .photo-row { display:flex; gap:10px; align-items:center; }
+.photo-row > div:last-child { min-width:0; }
 .photo-thumb { width:60px; height:80px; border:1px dashed #aaa; background:#fafafa center/cover no-repeat; flex:none; }
 .note { font-size:11px; color:#777; margin-top:4px; line-height:1.5; }
+.note.err { color:#b3261e; }
 .preview { padding:24px; overflow:auto; }
 .preview-inner { display:flex; flex-direction:column; align-items:center; gap:20px; }
 
-/* ===== 履歴書本体（A4） ===== */
-.page { width:210mm; height:297mm; background:#fff; padding:12mm 14mm; box-shadow:0 2px 12px rgba(0,0,0,.18); font-size:11pt; position:relative; overflow:hidden; }
-.page table { border-collapse:collapse; width:100%; }
-.page td, .page th { border:1px solid var(--line); padding:0 2mm; vertical-align:middle; font-weight:normal; }
-.page .title { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:3mm; }
-.page .title h2 { font-size:22pt; letter-spacing:.6em; margin:0; font-weight:600; }
-.page .title .date { font-size:10pt; }
-.lbl { font-size:8.5pt; color:#333; text-align:center; background:#fff; white-space:nowrap; }
-.furi { font-size:8pt; height:6mm; }
-.name { font-size:18pt; height:15mm; }
-.cell-h { height:8mm; }
-.photo-box { width:30mm; height:40mm; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:8pt; color:#666; text-align:center; background:center/cover no-repeat; }
-.hist td { height:9.2mm; font-size:10.5pt; }
-.hist .yr { width:16mm; text-align:center; }
-.hist .mo { width:12mm; text-align:center; }
-.hist .center { text-align:center; letter-spacing:.5em; }
-.hist .right { text-align:right; }
-.lic td { height:9.2mm; font-size:10.5pt; }
-.big { vertical-align:top !important; padding:2mm 3mm !important; white-space:pre-wrap; font-size:10.5pt; line-height:1.6; }
-.sect-lbl { font-size:9pt; padding:1mm 0; }
-.warn { position:absolute; bottom:4mm; right:14mm; font-size:8pt; color:#b3261e; }
+/* ===== 履歴書本体（A4×2ページ。名古屋ビジネス・アカデミー様式に合わせた寸法 / 単位mm） ===== */
+.page { width:210mm; height:297mm; background:#fff; position:relative; overflow:hidden; font-size:10.5pt; color:#000;
+  box-shadow:0 2px 12px rgba(0,0,0,.18); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+.page .content { position:absolute; width:167mm; }
+.p1 .content { left:26mm; top:20mm; }
+.p2 .content { left:22mm; top:21mm; }
+.n { display:inline-block; text-align:center; }
+.lbl { font-size:8.5pt; letter-spacing:.08em; justify-content:center; text-align:center; }
+
+/* 1ページ目：ヘッダ */
+.head { position:relative; height:18mm; }
+.head h2 { margin:0; font-size:20pt; font-weight:500; letter-spacing:1.2em; line-height:1; padding-top:3mm; }
+.head .date { position:absolute; left:0; width:118mm; top:11mm; text-align:right; font-size:9.5pt; }
+.photo-box { position:absolute; left:124mm; top:2mm; width:34mm; height:46mm; border:.2mm solid #666;
+  display:flex; align-items:center; justify-content:center; text-align:center; font-size:8.5pt; line-height:1.9; color:#333; z-index:2; background:#fff; }
+.photo-box .img { width:30mm; height:40mm; background:center/cover no-repeat; }
+
+/* 基本情報ボックス */
+.A { display:grid; grid-template-columns:19mm 100mm 6mm 41mm;
+  grid-template-rows:5.5mm 17.5mm 11.4mm 5.5mm 10.5mm 6.7mm 8.2mm 6.1mm 5.2mm 11.1mm; width:166mm; }
+.A > div { border-right:.2mm solid #000; border-bottom:.2mm solid #000; padding:0 1.5mm; display:flex; align-items:center; overflow:hidden; min-width:0; }
+.A .dot { border-bottom:.2mm dotted #444; }
+.A .et { border-top:.5mm solid #000; }
+.A .el { border-left:.5mm solid #000; }
+.A .er { border-right:.5mm solid #000; }
+.A .eb { border-bottom:.5mm solid #000; }
+.A .sp { border:none; border-bottom:.5mm solid #000; padding:0; }
+.A .blk { display:block; padding-top:.8mm; }
+.A .small { font-size:6.5pt; color:#333; line-height:1; margin-bottom:.4mm; }
+.A .furi { font-size:8.5pt; }
+.A .name { font-size:18pt; }
+.A .zip { font-size:9pt; height:4.6mm; display:flex; align-items:center; gap:2mm; white-space:nowrap; }
+.A .zip .zn { display:inline-block; min-width:21mm; text-align:center; }
+.A .zip .hint { font-size:6pt; color:#444; margin-left:3mm; }
+.A .addr { font-size:10pt; line-height:1.3; }
+.A .birth { font-size:10pt; white-space:nowrap; padding-left:12mm; }
+.A .tv { font-size:9.5pt; }
+
+/* 学歴・職歴ボックス */
+.B { display:grid; grid-template-columns:19mm 1fr; border:.5mm solid #000; height:147mm; margin-top:4.5mm; width:166mm; }
+.vl { display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; text-orientation:upright; letter-spacing:.75em; font-size:9pt; padding-top:.75em; }
+.B > .vl { border-right:.2mm solid #000; }
+.rows { display:flex; flex-direction:column; min-width:0; }
+.hr { flex:1; display:grid; grid-template-columns:34mm 1fr; border-bottom:.2mm dotted #555; min-height:0; }
+.hr:last-child { border-bottom:none; }
+.lic .hr { grid-template-columns:36mm 1fr; }
+.ym { display:grid; grid-template-columns:44% 18% 23.5% 14.5%; align-items:center; border-right:.2mm solid #000; font-size:9.5pt; }
+.ym .y, .ym .m { text-align:right; font-size:10.5pt; padding-right:.6mm; }
+.hr .tx { display:flex; align-items:center; padding:0 2.5mm; font-size:10.5pt; min-width:0; overflow:hidden; white-space:nowrap; }
+.hr .tx.ctr { justify-content:center; letter-spacing:.6em; }
+.hr .tx.rgt { justify-content:flex-end; }
+
+/* 2ページ目 */
+.C { border:.5mm solid #000; height:254.5mm; width:166mm; display:flex; flex-direction:column; }
+.sec { display:grid; grid-template-columns:18mm 1fr; border-top:.3mm solid #000; min-height:0; }
+.sec:first-child { border-top:none; }
+.sec > .vl { border-right:.2mm solid #000; }
+.s1 { height:69mm; } .s2 { height:73.5mm; } .s3 { height:83mm; } .s4 { flex:1; }
+.s1 .rows .hd { height:5.5mm; display:grid; grid-template-columns:36mm 1fr; border-bottom:.2mm solid #000; font-size:8.5pt; letter-spacing:.3em; }
+.s1 .hd div { display:flex; align-items:center; justify-content:center; }
+.s1 .hd div:first-child { border-right:.2mm solid #000; }
+.cols { display:grid; grid-template-columns:1fr 1fr; min-width:0; }
+.cols > div { min-width:0; }
+.cols > div + div { border-left:.2mm solid #000; }
+.colhd { height:9.2mm; line-height:9.2mm; font-size:8.5pt; padding:0 2mm; border-bottom:.2mm dotted #555; white-space:nowrap; }
+.ruled { line-height:9.2mm; font-size:10.5pt; padding:0 2mm; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden;
+  background-image:
+    repeating-linear-gradient(90deg, #fff 0, #fff .5mm, transparent .5mm, transparent 1mm),
+    repeating-linear-gradient(180deg, transparent 0, transparent 9mm, #666 9mm, #666 9.2mm); }
+.s2 .ruled { height:64.3mm; }
+.s3 .ruled { height:100%; }
+.plain { padding:2mm 2.5mm; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; line-height:1.6; font-size:10.5pt; height:100%; }
 
 @media (max-width:1100px) {
   .app { grid-template-columns:1fr; }
@@ -86,13 +138,14 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用PCでは使用後に「データを消去」を押してください。</div>
 
     <button class="primary" id="btnPrint">PDFを出力（印刷 → PDFとして保存）</button>
-    <div class="note">印刷画面で送信先を「PDFに保存」にしてください。余白は「なし」、背景のグラフィックはオンを推奨。</div>
+    <div class="note">印刷画面で送信先を「PDFに保存」、用紙サイズを A4、余白を「なし」にしてください（2ページ出力されます）。</div>
     <div class="btns" style="margin-bottom:14px">
       <button id="btnExport">バックアップ保存(JSON)</button>
       <button id="btnImport">バックアップ読込</button>
       <button id="btnClear" class="danger">データを消去</button>
       <input type="file" id="fileImport" accept="application/json" hidden>
     </div>
+    <div class="note err" id="fitNote"></div>
 
     <fieldset><legend>基本情報</legend>
       <label>日付（作成日）</label><input type="date" id="f_date">
@@ -100,11 +153,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
         <div><label>ふりがな</label><input type="text" id="f_furigana" autocomplete="off"></div>
         <div><label>氏名</label><input type="text" id="f_name" autocomplete="off"></div>
       </div>
-      <div class="row2">
-        <div><label>生年月日</label><input type="date" id="f_birth"></div>
-        <div><label>性別（任意）</label>
-          <select id="f_gender"><option value="">未記入</option><option>男</option><option>女</option><option>その他</option></select></div>
-      </div>
+      <label>生年月日</label><input type="date" id="f_birth">
       <label>顔写真（任意・端末内のみで処理）</label>
       <div class="photo-row">
         <div class="photo-thumb" id="photoThumb"></div>
@@ -112,16 +161,34 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
       </div>
     </fieldset>
 
-    <fieldset><legend>連絡先</legend>
-      <label>現住所 ふりがな</label><input type="text" id="f_addrFurigana" autocomplete="off">
-      <label>現住所</label><input type="text" id="f_addr" autocomplete="off">
+    <fieldset><legend>現住所</legend>
+      <label>ふりがな</label><input type="text" id="f_addrFurigana" autocomplete="off">
+      <div class="row2">
+        <div><label>郵便番号</label><input type="text" id="f_zip" inputmode="numeric" placeholder="460-0001" autocomplete="off"></div>
+        <div></div>
+      </div>
+      <label>住所</label><input type="text" id="f_addr" autocomplete="off">
       <div class="row2">
         <div><label>電話</label><input type="tel" id="f_tel" autocomplete="off"></div>
-        <div><label>メール</label><input type="email" id="f_email" autocomplete="off"></div>
+        <div><label>携帯</label><input type="tel" id="f_mobile" autocomplete="off"></div>
+      </div>
+      <label>E-mailアドレス</label><input type="email" id="f_email" autocomplete="off">
+    </fieldset>
+
+    <fieldset><legend>連絡先（現住所以外を希望する場合のみ）</legend>
+      <label>ふりがな</label><input type="text" id="f_cFurigana" autocomplete="off">
+      <div class="row2">
+        <div><label>郵便番号</label><input type="text" id="f_cZip" inputmode="numeric" autocomplete="off"></div>
+        <div></div>
+      </div>
+      <label>住所</label><input type="text" id="f_cAddr" autocomplete="off">
+      <div class="row2">
+        <div><label>電話</label><input type="tel" id="f_cTel" autocomplete="off"></div>
+        <div><label>携帯</label><input type="tel" id="f_cMobile" autocomplete="off"></div>
       </div>
     </fieldset>
 
-    <fieldset><legend>学歴・職歴</legend>
+    <fieldset><legend>学歴・職歴（最大14行）</legend>
       <div id="histList"></div>
       <div class="btns">
         <button data-add="row">＋行を追加</button>
@@ -129,19 +196,27 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
         <button data-add="職歴">＋「職歴」見出し</button>
         <button data-add="以上">＋「以上」</button>
       </div>
-      <div class="note">年・月を空にすると、内容だけの行（見出し等）になります。「学歴」「職歴」は中央揃い、「以上」は右寄せで表示します。1ページ目は14行まで。</div>
+      <div class="note">年・月を空にすると、内容だけの行（見出し等）になります。「学歴」「職歴」は中央揃い、「以上」は右寄せで表示します。</div>
+      <div class="note err" id="histNote"></div>
     </fieldset>
 
-    <fieldset><legend>免許・資格</legend>
+    <fieldset><legend>免許・資格等（最大7行）</legend>
       <div id="licList"></div>
       <div class="btns"><button data-add="lic">＋行を追加</button></div>
+      <div class="note err" id="licNote"></div>
     </fieldset>
 
-    <fieldset><legend>志望動機・自己PR</legend>
+    <fieldset><legend>趣味・得意な学科・スポーツ等</legend>
+      <textarea id="f_hobby" rows="4"></textarea>
+    </fieldset>
+    <fieldset><legend>特技・自己啓発等</legend>
+      <textarea id="f_skill" rows="4"></textarea>
+    </fieldset>
+    <fieldset><legend>志望の動機</legend>
       <textarea id="f_motive" rows="6"></textarea>
     </fieldset>
-    <fieldset><legend>本人希望記入欄</legend>
-      <textarea id="f_wish" rows="4"></textarea>
+    <fieldset><legend>備考</legend>
+      <textarea id="f_remarks" rows="3"></textarea>
     </fieldset>
   </aside>
 
@@ -153,15 +228,17 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 <script>
 (() => {
   const KEY = 'resume-maker-v1';
+  const HIST_ROWS = 14, LIC_ROWS = 7;
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
   const blank = () => ({
     date: new Date().toISOString().slice(0,10),
-    furigana:'', name:'', birth:'', gender:'', photo:'',
-    addrFurigana:'', addr:'', tel:'', email:'',
+    furigana:'', name:'', birth:'', photo:'',
+    addrFurigana:'', zip:'', addr:'', tel:'', mobile:'', email:'',
+    cFurigana:'', cZip:'', cAddr:'', cTel:'', cMobile:'',
     hist:[{y:'',m:'',t:''}], lic:[{y:'',m:'',t:''}],
-    motive:'', wish:''
+    hobby:'', skill:'', motive:'', remarks:''
   });
 
   let data = load();
@@ -169,7 +246,11 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) return Object.assign(blank(), JSON.parse(raw));
+      if (raw) {
+        const d = Object.assign(blank(), JSON.parse(raw));
+        if (d.wish && !d.remarks) d.remarks = d.wish; // 旧バージョンからの移行
+        return d;
+      }
     } catch (e) {}
     return blank();
   }
@@ -181,7 +262,8 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     }, 250);
   }
 
-  const simple = ['date','furigana','name','birth','gender','addrFurigana','addr','tel','email','motive','wish'];
+  const simple = ['date','furigana','name','birth','addrFurigana','zip','addr','tel','mobile','email',
+                  'cFurigana','cZip','cAddr','cTel','cMobile','hobby','skill','motive','remarks'];
   simple.forEach(k => {
     const el = $('f_' + k);
     el.addEventListener('input', () => { data[k] = el.value; save(); render(); });
@@ -216,7 +298,6 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     if (v === 'lic') data.lic.push({y:'',m:'',t:''});
     else if (v === 'row') data.hist.push({y:'',m:'',t:''});
     else {
-      // 空の最終行があれば再利用
       const last = data.hist[data.hist.length-1];
       if (last && !last.y && !last.m && !last.t) last.t = v; else data.hist.push({y:'',m:'',t:v});
     }
@@ -233,7 +314,6 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
       const W = 300, H = 400;
       const c = document.createElement('canvas'); c.width = W; c.height = H;
       const ctx = c.getContext('2d');
-      // cover でトリミング（3:4）
       const s = Math.max(W / img.width, H / img.height);
       const w = img.width * s, h = img.height * s;
       ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
@@ -272,71 +352,103 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   // ---- プレビュー描画 ----
   const ymd = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? {y:+m[1], mo:+m[2], d:+m[3]} : null; };
   const age = b => { const d = new Date(), x = ymd(b); if (!x) return ''; let a = d.getFullYear() - x.y; if (d.getMonth()+1 < x.mo || (d.getMonth()+1 === x.mo && d.getDate() < x.d)) a--; return a; };
+  const n = (v, w) => `<span class="n" style="min-width:${w}mm">${esc(v)}</span>`;
 
-  const HIST_ROWS = 14, LIC_ROWS = 6;
-
-  function histRows(list, n) {
-    let html = '';
+  function rowsHtml(list, N) {
     const rows = list.filter(r => r.y || r.m || r.t);
-    const total = Math.max(n, rows.length);
-    for (let i = 0; i < total; i++) {
+    let html = '';
+    for (let i = 0; i < N; i++) {
       const r = rows[i] || {y:'',m:'',t:''};
-      const cls = (!r.y && !r.m && (r.t === '学歴' || r.t === '職歴')) ? 'center' : (!r.y && !r.m && r.t === '以上') ? 'right' : '';
-      html += `<tr><td class="yr">${esc(r.y)}</td><td class="mo">${esc(r.m)}</td><td class="${cls}">${esc(r.t)}</td></tr>`;
+      const isBlank = !r.y && !r.m && !r.t;
+      const showYM = isBlank || r.y || r.m;
+      const heading = !r.y && !r.m;
+      const tc = heading && (r.t === '学歴' || r.t === '職歴') ? 'ctr' : (heading && r.t === '以上' ? 'rgt' : '');
+      html += `<div class="hr"><div class="ym">${showYM ? `<span class="y">${esc(r.y)}</span><span>年</span><span class="m">${esc(r.m)}</span><span>月</span>` : ''}</div><div class="tx ${tc}">${esc(r.t)}</div></div>`;
     }
-    return {html, over: rows.length > n};
+    return {html, over: rows.length > N};
   }
 
   function render() {
     const d = data, dt = ymd(d.date), b = ymd(d.birth);
-    const dateStr = dt ? `${dt.y}年 ${dt.mo}月 ${dt.d}日 現在` : '　　年　　月　　日 現在';
-    const birthStr = b ? `${b.y}年 ${b.mo}月 ${b.d}日生（満 ${age(d.birth)} 歳）` : '　　年　　月　　日生（満　　歳）';
-    const photo = d.photo ? `style="background-image:url('${d.photo}')"` : '';
-    const h = histRows(d.hist, HIST_ROWS);
-    const l = histRows(d.lic, LIC_ROWS);
+    const photo = d.photo
+      ? `<div class="img" style="background-image:url('${d.photo}')"></div>`
+      : '写真をはる位置<br>(30×40mm)<br>○本人単身／胸から上';
+    const h = rowsHtml(d.hist, HIST_ROWS);
+    const l = rowsHtml(d.lic, LIC_ROWS);
+    const birth = `${n(b ? b.y : '', 11)}年 ${n(b ? b.mo : '', 8)}月 ${n(b ? b.d : '', 8)}日生　(満 ${n(b ? age(d.birth) : '', 9)}歳)`;
 
     const p1 = `
-<section class="page">
-  <div class="title"><h2>履歴書</h2><div class="date">${esc(dateStr)}</div></div>
-  <table style="margin-bottom:0">
-    <tr>
-      <td class="lbl" style="width:22mm">ふりがな</td>
-      <td class="furi" colspan="2">${esc(d.furigana)}</td>
-      <td rowspan="4" style="width:34mm;border:none;padding:0 0 0 4mm;vertical-align:top"><div class="photo-box" ${photo}>${d.photo ? '' : '写真をはる位置<br>縦40mm 横30mm'}</div></td>
-    </tr>
-    <tr><td class="lbl">氏　名</td><td class="name" colspan="2">${esc(d.name)}</td></tr>
-    <tr><td class="lbl">生年月日</td><td class="cell-h" style="width:80mm">${esc(birthStr)}</td><td class="cell-h" style="text-align:center">${d.gender ? '性別 ' + esc(d.gender) : '性別'}</td></tr>
-    <tr><td class="lbl" style="height:4mm"></td><td colspan="2" style="border:none"></td></tr>
-  </table>
-  <table style="margin-top:-1px">
-    <tr><td class="lbl" style="width:22mm">ふりがな</td><td class="furi">${esc(d.addrFurigana)}</td><td class="lbl" rowspan="2" style="width:12mm">電話</td><td rowspan="2" style="width:48mm">${esc(d.tel)}</td></tr>
-    <tr><td class="lbl" style="height:16mm">現住所</td><td>${esc(d.addr)}</td></tr>
-    <tr><td class="lbl cell-h">メール</td><td colspan="3">${esc(d.email)}</td></tr>
-  </table>
-  <table class="hist" style="margin-top:3mm">
-    <tr><th class="lbl yr" style="height:8mm">年</th><th class="lbl mo">月</th><th class="lbl">学歴・職歴（各別にまとめて書く）</th></tr>
-    ${h.html}
-  </table>
-  ${h.over ? '<div class="warn">※行数が多く、1ページに収まらない可能性があります</div>' : ''}
-</section>`;
+<section class="page p1"><div class="content">
+  <div class="head">
+    <h2>履歴書</h2>
+    <div class="date">${n(dt ? dt.y : '', 12)}年${n(dt ? dt.mo : '', 9)}月${n(dt ? dt.d : '', 9)}日現在</div>
+    <div class="photo-box">${photo}</div>
+  </div>
+  <div class="A">
+    <div class="lbl el et dot" style="grid-area:1/1/2/2">ふりがな</div>
+    <div class="er et dot furi" style="grid-area:1/2/2/3">${esc(d.furigana)}</div>
+    <div class="lbl el" style="grid-area:2/1/3/2">氏　名</div>
+    <div class="er name" style="grid-area:2/2/3/3">${esc(d.name)}</div>
+    <div class="lbl el" style="grid-area:3/1/4/2">生年月日</div>
+    <div class="er birth" style="grid-area:3/2/4/3">${birth}</div>
+    <div class="sp" style="grid-area:3/3/4/4"></div>
+
+    <div class="lbl el dot" style="grid-area:4/1/5/2">ふりがな</div>
+    <div class="dot furi" style="grid-area:4/2/5/4">${esc(d.addrFurigana)}</div>
+    <div class="lbl el" style="grid-area:5/1/7/2">現住所</div>
+    <div class="blk" style="grid-area:5/2/7/4"><div class="zip">〒(<span class="zn">${esc(d.zip)}</span>)</div><div class="addr">${esc(d.addr)}</div></div>
+    <div class="lbl el" style="grid-area:7/1/8/2;font-size:7pt">E-mailアドレス</div>
+    <div style="grid-area:7/2/8/4;font-size:10pt">${esc(d.email)}</div>
+    <div class="lbl el dot" style="grid-area:8/1/9/2">ふりがな</div>
+    <div class="dot furi" style="grid-area:8/2/9/4">${esc(d.cFurigana)}</div>
+    <div class="lbl el eb" style="grid-area:9/1/11/2">連絡先</div>
+    <div class="blk eb" style="grid-area:9/2/11/4"><div class="zip">〒(<span class="zn">${esc(d.cZip)}</span>)<span class="hint">（連絡先欄は現住所以外に連絡を希望する場合のみ記入）</span></div><div class="addr">${esc(d.cAddr)}</div></div>
+
+    <div class="er et blk" style="grid-area:4/4/6/5"><div class="small">電話</div><div class="tv">${esc(d.tel)}</div></div>
+    <div class="er blk" style="grid-area:6/4/8/5"><div class="small">携帯</div><div class="tv">${esc(d.mobile)}</div></div>
+    <div class="er blk" style="grid-area:8/4/10/5"><div class="small">電話</div><div class="tv">${esc(d.cTel)}</div></div>
+    <div class="er eb blk" style="grid-area:10/4/11/5"><div class="small">携帯</div><div class="tv">${esc(d.cMobile)}</div></div>
+  </div>
+  <div class="B">
+    <div class="vl">学歴・職歴</div>
+    <div class="rows">${h.html}</div>
+  </div>
+</div></section>`;
 
     const p2 = `
-<section class="page">
-  <table class="lic">
-    <tr><th class="lbl yr" style="height:8mm">年</th><th class="lbl mo">月</th><th class="lbl">免許・資格</th></tr>
-    ${l.html}
-  </table>
-  <table style="margin-top:4mm">
-    <tr><td class="lbl sect-lbl" style="text-align:left;padding-left:2mm">志望の動機、特技、好きな学科、アピールポイントなど</td></tr>
-    <tr><td class="big" style="height:95mm">${esc(d.motive)}</td></tr>
-  </table>
-  <table style="margin-top:4mm">
-    <tr><td class="lbl sect-lbl" style="text-align:left;padding-left:2mm">本人希望記入欄（特に給料・職種・勤務時間・勤務地・その他についての希望などがあれば記入）</td></tr>
-    <tr><td class="big" style="height:55mm">${esc(d.wish)}</td></tr>
-  </table>
-</section>`;
+<section class="page p2"><div class="content">
+  <div class="C">
+    <div class="sec s1">
+      <div class="vl">免許・資格等</div>
+      <div class="rows lic">
+        <div class="hd"><div>取得年月</div><div>免許・資格等の名称</div></div>
+        ${l.html}
+      </div>
+    </div>
+    <div class="sec s2">
+      <div class="vl">趣味・特技等</div>
+      <div class="cols">
+        <div><div class="colhd">趣味・得意な学科・スポーツ等</div><div class="ruled" data-fit="趣味・得意な学科・スポーツ等">${esc(d.hobby)}</div></div>
+        <div><div class="colhd">特技・自己啓発等</div><div class="ruled" data-fit="特技・自己啓発等">${esc(d.skill)}</div></div>
+      </div>
+    </div>
+    <div class="sec s3">
+      <div class="vl">志望の動機</div>
+      <div class="ruled" data-fit="志望の動機">${esc(d.motive)}</div>
+    </div>
+    <div class="sec s4">
+      <div class="vl">備考</div>
+      <div class="plain" data-fit="備考">${esc(d.remarks)}</div>
+    </div>
+  </div>
+</div></section>`;
 
     $('pages').innerHTML = p1 + p2;
+
+    $('histNote').textContent = h.over ? `${HIST_ROWS}行を超えた分は出力されません。` : '';
+    $('licNote').textContent = l.over ? `${LIC_ROWS}行を超えた分は出力されません。` : '';
+    const over = [...document.querySelectorAll('[data-fit]')].filter(el => el.scrollHeight > el.clientHeight + 2).map(el => el.dataset.fit);
+    $('fitNote').textContent = over.length ? `枠に収まらない欄があります：${over.join('、')}（はみ出した分は出力されません）` : '';
   }
 
   fillForm(); render();
