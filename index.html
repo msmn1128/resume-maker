@@ -280,6 +280,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     });
     const blankOnly = d.hist.length <= 1 && d.hist.every(r => r.kind === 'row' && !r.y && !r.m && !r.t && !r.kt && !r.dept && !r.course && !r.ev);
     if (!d.hist.length || blankOnly) d.hist = presetHist();
+    ['addrFurigana', 'cFurigana'].forEach(k => { if (d[k] === 'undefined') d[k] = ''; });   // 旧データの不具合で入った文字を消す
     d.lic = (d.lic || []).map(r => Object.assign(blankLic(), r));
     if (!d.lic.length) d.lic = [blankLic()];
     return d;
@@ -371,10 +372,10 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   let zipMap = null, zipLoading = null;
   function loadZip() {
     if (zipMap) return Promise.resolve(zipMap);
-    return zipLoading || (zipLoading = fetch('data/zipdata.txt').then(r => { if (!r.ok) throw 0; return r.text(); }).then(t => {
+    return zipLoading || (zipLoading = fetch('data/zipdata.txt?v=3')   /* データを更新したら数字を上げる（古いキャッシュを使わないため） */.then(r => { if (!r.ok) throw 0; return r.text(); }).then(t => {
       zipMap = new Map(); let base = '', kbase = '';
       t.split('\n').forEach(l => {
-        const [z, b, tw, kb, kw] = l.split('\t'); if (b) { base = b; kbase = kb; }
+        const [z, b, tw, kb, kw] = l.split('\t'); if (b) { base = b; kbase = kb || ''; }
         zipMap.set(z, {addr: base + (tw || ''), kana: kbase + (kw || '')});
       });
       return zipMap;
