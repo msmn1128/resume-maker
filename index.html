@@ -757,10 +757,13 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
     const Y = [L.yA0, L.r1, L.r2, L.r3, L.r4, L.r5, L.r6, L.r7, L.yA1];
     const lab = (i, txt, pt) => T(L.x0, Y[i], L.x1 - L.x0, Y[i+1] - Y[i], txt, 'c', fs(pt));
+    // ふりがな欄：文字のまわりの余白を、上下左右ともそろえる（上下の余白は約1mm＝左右も同じ）
+    const FM = 1.0;
+    const furi = (ya, yb, xr, txt) => T(L.x1 + FM - 0.45, ya + 0.1, xr - L.x1 - FM * 2 + 0.6, yb - ya, esc(txt), '', fs(8.5));
     lab(0, 'ふりがな', 8); lab(1, '氏　名', 9.6); lab(2, '生年月日', 9.6); lab(3, 'ふりがな', 8);
     lab(4, '現住所', 9.6); lab(5, 'E-mailアドレス', 5.6); lab(6, 'ふりがな', 8); lab(7, '連絡先', 9.6);
 
-    T(L.x1 + 2, Y[0], L.x2 - L.x1 - 3, Y[1] - Y[0], esc(d.furigana), '', fs(8.5));
+    furi(Y[0], Y[1], L.x2, d.furigana);
     T(L.x1 + 3, Y[1], L.x2 - L.x1 - 4, Y[2] - Y[1], esc(d.name), '', fs(17));
     // 生年月日「　年　月　日生　(満　歳)」
     const by = Y[2], bh = Y[3] - Y[2];
@@ -769,7 +772,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     T(84.5, by, 5.9, bh, b ? b.d : '', 'r', fs(10)); T(90.8, by, 8, bh, '日生', '', fs(10));
     T(106.3, by, 6.5, bh, '(満', '', fs(10)); T(112.5, by, 7, bh, b ? age(d.birth) : '', 'r', fs(10)); T(119.9, by, 5, bh, '歳)', '', fs(10));
 
-    T(L.x1 + 2, Y[3], L.x3 - L.x1 - 3, Y[4] - Y[3], esc(d.addrFurigana), '', fs(8.5));
+    furi(Y[3], Y[4], L.x3, d.addrFurigana);
     const zipRow = (yTop, zip) => {   // 〒(　　-　　)
       T(41.3, yTop + 0.7, 6, 3.8, '〒(', '', fs(9));
       T(46.9, yTop + 0.7, 16, 3.8, esc(zip), 'c', fs(9));
@@ -781,7 +784,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     addrBox(Y[4], Y[5], d.addr, '現住所');
     T(L.x1 + 2, Y[5], L.x3 - L.x1 - 3, Y[6] - Y[5], esc(d.email), '', fs(9.5));
 
-    T(L.x1 + 2, Y[6], L.x3 - L.x1 - 3, Y[7] - Y[6], d.same ? '' : esc(d.cFurigana), '', fs(8.5));
+    furi(Y[6], Y[7], L.x3, d.same ? '' : d.cFurigana);
     if (d.same) {
       T(L.x1, Y[7], L.x3 - L.x1, Y[8] - Y[7], '同　上', 'c', fs(12));
     } else {
