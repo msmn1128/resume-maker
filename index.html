@@ -158,7 +158,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     <details class="sec" open><summary>現住所</summary>
       <label for="f_zip">郵便番号（数字のみ・ハイフンは自動）</label><input type="text" id="f_zip" inputmode="numeric" autocomplete="off">
       <label for="f_addr">住所</label><input type="text" id="f_addr" autocomplete="off">
-      <label for="f_addrFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_addrFurigana" autocomplete="off">
+      <label for="f_addrFurigana">ふりがな（郵便番号から自動入力・番地の読みは自分で追加）</label><input type="text" id="f_addrFurigana" autocomplete="off">
       <label for="f_tel">電話（数字のみ・ハイフンは自動）</label><input type="tel" id="f_tel" inputmode="numeric" autocomplete="off">
       <label for="f_mobile">携帯（数字のみ・ハイフンは自動）</label><input type="tel" id="f_mobile" inputmode="numeric" autocomplete="off">
       <label for="f_email">E-mailアドレス</label><input type="email" id="f_email" autocomplete="off">
@@ -168,7 +168,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <label class="chk"><input type="checkbox" id="f_same"> 現住所と同じ（枠の中央に「同　上」と表示）</label>
       <label for="f_cZip">郵便番号（数字のみ・ハイフンは自動）</label><input type="text" id="f_cZip" inputmode="numeric" autocomplete="off">
       <label for="f_cAddr">住所</label><input type="text" id="f_cAddr" autocomplete="off">
-      <label for="f_cFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_cFurigana" autocomplete="off">
+      <label for="f_cFurigana">ふりがな（郵便番号から自動入力・番地の読みは自分で追加）</label><input type="text" id="f_cFurigana" autocomplete="off">
       <label for="f_cTel">電話（数字のみ・ハイフンは自動）</label><input type="tel" id="f_cTel" inputmode="numeric" autocomplete="off">
       <label for="f_cMobile">携帯（数字のみ・ハイフンは自動）</label><input type="tel" id="f_cMobile" inputmode="numeric" autocomplete="off">
     </details>
@@ -348,29 +348,35 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   function loadZip() {
     if (zipMap) return Promise.resolve(zipMap);
     return zipLoading || (zipLoading = fetch('data/zipdata.txt').then(r => { if (!r.ok) throw 0; return r.text(); }).then(t => {
-      zipMap = new Map(); let base = '';
-      t.split('\n').forEach(l => { const [z, b, tw] = l.split('\t'); if (b) base = b; zipMap.set(z, base + (tw || '')); });
+      zipMap = new Map(); let base = '', kbase = '';
+      t.split('\n').forEach(l => {
+        const [z, b, tw, kb, kw] = l.split('\t'); if (b) { base = b; kbase = kb; }
+        zipMap.set(z, {addr: base + (tw || ''), kana: kbase + (kw || '')});
+      });
       return zipMap;
     }).catch(() => { zipLoading = null; return null; }));
   }
   const autoFilled = {};   // 自動入力した住所（あとから手で直した住所は上書きしない）
-  async function zipToAddr(zipKey, addrKey) {
+  async function zipToAddr(zipKey, addrKey, kanaKey) {
     if (!okNum(data[zipKey])) return;
     const z = digits(data[zipKey]); if (z.length !== 7) return;
-    const m = await loadZip(); const a = m && m.get(z); if (!a) return;
+    const m = await loadZip(); const rec = m && m.get(z); if (!rec) return;
     if (digits(data[zipKey]) !== z) return;                       // 待っている間に番号が変わった
-    const cur = data[addrKey] || '';
-    if (cur && cur !== autoFilled[addrKey]) return;               // 手で入力済みの住所は上書きしない
-    autoFilled[addrKey] = a; data[addrKey] = a;
-    const el = $('f_' + addrKey); el.value = a; save(); render();
-    if (document.activeElement === $('f_' + zipKey)) { el.focus(); el.setSelectionRange(a.length, a.length); }   // 続けて番地を入力できるように
+    const put = (key, val) => {                                   // 空か、前回の自動入力のままの欄だけ入れる（手で入力済みは上書きしない）
+      const cur = data[key] || '';
+      if (!val || (cur && cur !== autoFilled[key])) return false;
+      autoFilled[key] = val; data[key] = val; $('f_' + key).value = val; return true;
+    };
+    const okA = put(addrKey, rec.addr); put(kanaKey, rec.kana);
+    save(); render();
+    if (okA && document.activeElement === $('f_' + zipKey)) { const el = $('f_' + addrKey); el.focus(); el.setSelectionRange(el.value.length, el.value.length); }   // 続けて番地を入力できるように
   }
   simple.forEach(k => {
     const el = $('f_' + k);
     el.addEventListener('input', () => {
       if (NUMF[k]) numMark(k);
       if (FMT[k] && (!NUMF[k] || okNum(el.value))) applyFmt(el, FMT[k]); data[k] = el.value; save(); render();
-      if (k === 'zip') zipToAddr('zip', 'addr'); else if (k === 'cZip') zipToAddr('cZip', 'cAddr');
+      if (k === 'zip') zipToAddr('zip', 'addr', 'addrFurigana'); else if (k === 'cZip') zipToAddr('cZip', 'cAddr', 'cFurigana');
     });
   });
   $('f_same').addEventListener('change', e => { data.same = e.target.checked; syncSame(); save(); render(); });
