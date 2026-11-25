@@ -177,7 +177,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <div id="histList"></div>
       <div class="btns">
         <button data-add="row">＋行を追加</button>
-        <button data-add="学歴">＋「学歴」の見出し</button>
+        <button data-add="学歴" id="btnAddGaku" hidden>＋「学歴」の見出し</button>
         <button data-add="職歴">＋「職歴」の見出し</button>
       </div>
       <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（年・月は数字のみ。使わない行は空のままで大丈夫です）。最後の行には「以上」が自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
@@ -423,6 +423,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   function buildHist() {
     const box = $('histList'); box.textContent = '';
     const GRAD = [['卒業','卒業'], ['卒業見込','卒業見込']];
+    $('btnAddGaku').hidden = data.hist.some(r => r.kind === 'head' && r.t === '学歴');   // 見出しがあるときは出さない
     data.hist.forEach((r, i) => {
       if (r.kind === 'head') {
         box.append(h('div', {class:'card head'}, h('b', {textContent:'見出し：' + r.t}), moveBtns(data.hist, i, buildHist)));
@@ -472,7 +473,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const v = a.dataset.add;
     if (v === 'lic') { data.lic.push(blankLic()); buildLic(); }
     else if (v === 'row') { data.hist.push(blankRow()); buildHist(); }
-    else { data.hist.push({kind:'head', t:v}); buildHist(); }
+    else { data.hist[v === '学歴' ? 'unshift' : 'push']({kind:'head', t:v}); buildHist(); }   // 「学歴」は先頭に入れる
     save(); render();
   });
 
