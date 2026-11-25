@@ -710,6 +710,20 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const ln = (x1,y1,x2,y2,w,dot) => sv.push(`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#000" stroke-width="${w}"${dot ? ' stroke-dasharray=".4 .6"' : ''}/>`);
     const T = (x,y,w,hh,html,cls,st) => tx.push(`<div class="t ${cls||''}" style="left:${x}mm;top:${y}mm;width:${w}mm;height:${hh}mm;${st||''}">${html}</div>`);
     const fs = pt => `font-size:${pt}pt;`;
+    // 年・月・日の並び：数字と「年」「月」の間隔をそろえる（数字→ラベルは0.8mm、ラベル→次の数字は2mm）。右端から逆算して配置
+    const GD = 0.8, GL = 2.0;
+    const dateRow = (yTop, hh, pt, lpt, endLabel, endRight, v) => {   // v: {y, m, d}（dがなければ「月」で終わる）
+      const lw = lpt * PT, dw = pt * PT;   // 数字2桁の幅＝1em
+      let right = endRight;
+      if (endLabel) {
+        const ew = [...endLabel].length * lw; T(right - ew, yTop, ew + 0.5, hh, endLabel, '', fs(lpt)); right -= ew + GD;
+        T(right - 6, yTop, 6, hh, esc(v.d), 'r', fs(pt)); right -= dw + GL;
+      }
+      right -= lw; T(right, yTop, lw + 0.5, hh, '月', '', fs(lpt)); right -= GD;
+      T(right - 6, yTop, 6, hh, esc(v.m), 'r', fs(pt)); right -= dw + GL;
+      right -= lw; T(right, yTop, lw + 0.5, hh, '年', '', fs(lpt)); right -= GD;
+      T(right - 14, yTop, 14, hh, esc(v.y), 'r', fs(pt));
+    };
 
     // ============ 罫線（SVG） ============
     // 基本情報ボックス（外枠は太線。右に張り出す段差つき）
@@ -751,9 +765,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const dt = ymd(d.date), b = ymd(d.birth);
     // 日付「　年　月　日現在」
     const dy = 28, dh = 3.2;
-    T(80, dy, 13.8, dh, dt ? dt.y : '', 'r', fs(9.5)); T(94, dy, 3.6, dh, '年', '', fs(9.5));
-    T(99.5, dy, 6.3, dh, dt ? dt.mo : '', 'r', fs(9.5)); T(106, dy, 3.6, dh, '月', '', fs(9.5));
-    T(111.5, dy, 5.7, dh, dt ? dt.d : '', 'r', fs(9.5)); T(117.5, dy, 8, dh, '日現在', '', fs(9.5));
+    dateRow(dy, dh, 9.5, 9.5, '日現在', 125.5, {y: dt ? dt.y : '', m: dt ? dt.mo : '', d: dt ? dt.d : ''});
 
     const Y = [L.yA0, L.r1, L.r2, L.r3, L.r4, L.r5, L.r6, L.r7, L.yA1];
     const lab = (i, txt, pt) => T(L.x0, Y[i], L.x1 - L.x0, Y[i+1] - Y[i], txt, 'c', fs(pt));
@@ -768,9 +780,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     T(L.x1, Y[1], L.x2 - L.x1, Y[2] - Y[1], esc(d.name), 'c', fs(17));   // 氏名は欄の中央（左右・上下）
     // 生年月日「　年　月　日生　(満　歳)」
     const by = Y[2], bh = Y[3] - Y[2];
-    T(48.7, by, 14, bh, b ? b.y : '', 'r', fs(10)); T(63, by, 3.6, bh, '年', '', fs(10));
-    T(70, by, 5.8, bh, b ? b.mo : '', 'r', fs(10)); T(76.2, by, 3.6, bh, '月', '', fs(10));
-    T(84.5, by, 5.9, bh, b ? b.d : '', 'r', fs(10)); T(90.8, by, 8, bh, '日生', '', fs(10));
+    dateRow(by, bh, 10, 10, '日生', 97.9, {y: b ? b.y : '', m: b ? b.mo : '', d: b ? b.d : ''});
     T(106.3, by, 6.5, bh, '(満', '', fs(10)); T(111.2, by, 9.2, bh, b ? age(d.birth) : '', 'c', fs(10)); T(119.9, by, 5, bh, '歳)', '', fs(10));   // 年齢は「(満」と「歳)」のあいだの中央
 
     furi(Y[3], Y[4], L.x3, d.addrFurigana);
@@ -831,8 +841,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       const ln_ = k === HIST_ROWS - 1 ? {head:'以上'} : (lines[k] || {});
       const ry = L.yB0 + k * pB;
       // 年・月の目盛りは全行に入れる
-      T(41, ry, 13, pB, esc(ln_.y || ''), 'r', fs(BODY_PT)); T(54.3, ry, 3.2, pB, '年', '', fs(9));
-      T(56.8, ry, 5.5, pB, esc(ln_.m || ''), 'r', fs(BODY_PT)); T(62.6, ry, 3.2, pB, '月', '', fs(9));
+      dateRow(ry, pB, BODY_PT, 9, '', 66.0, {y: ln_.y || '', m: ln_.m || ''});
       if (ln_.head) {
         if (ln_.head === '以上') T(L.xym + 2.5, ry, TEXT_RIGHT - L.xym - 2.5, pB, '以上', 'r', fs(BODY_PT));
         else T(L.xym, ry, L.x4 - L.xym, pB, esc(ln_.head), 'c', fs(BODY_PT) + 'letter-spacing:.8em;padding-left:.8em;');
@@ -851,8 +860,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const licOver = lics.length - LIC_ROWS;
     for (let k = 0; k < LIC_ROWS; k++) {
       const r = lics[k] || {}; const ry = R.yh + k * pL;
-      T(220.5, ry, 14.3, pL, esc(r.y || ''), 'r', fs(BODY_PT)); T(235.1, ry, 3.2, pL, '年', '', fs(9));
-      T(238, ry, 5.4, pL, esc(r.m || ''), 'r', fs(BODY_PT)); T(243.7, ry, 3.2, pL, '月', '', fs(9));
+      dateRow(ry, pL, BODY_PT, 9, '', 247.2, {y: r.y || '', m: r.m || ''});
       const suf = r.lk === '検定' ? '合格' : (r.lk === '資格' ? '取得' : '');
       const sw = suf ? suf.length * BODY_MM + 2 : 0;
       const rx = R.x4 - 2.4;
