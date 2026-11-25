@@ -490,6 +490,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     [['hs', '高校', '高校名', '卒業'], ['col', '専門学校', '専門学校名', '卒業']].forEach(([k, title, ph, gl]) => {
       const wOut = k === 'col' ? '退学' : '転学', wIn = k === 'col' ? '入学' : '転入学';
       const b = e[k], kids = [h('div', {class:'ct', textContent:title}), ...names(b, 't', 'dept', 'course', ph), ym('入学', b, 'sy', 'sm')];
+      kids.push(ym(gl, b, 'ey', 'em'));
+      if (k === 'col') kids.push(h('div', {class:'note', textContent:'卒業年月が今月以降なら、履歴書には「卒業見込」と自動で表示されます'}));
       const chk = h('input', {type:'checkbox', checked:!!b.trans});
       chk.addEventListener('change', () => { b.trans = chk.checked; save(); buildHist(); render(); });
       kids.push(h('label', {class:'chk'}, chk, (k === 'col' ? '学校の制度で移籍した（以前の学校は退学の扱い・移籍先が出ます）' : '転入学した（2校目が出ます）')));
@@ -504,8 +506,6 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
         };
         iy.addEventListener('input', sync); im.addEventListener('input', sync);
       }
-      kids.push(ym(gl, b, 'ey', 'em'));
-      if (k === 'col') kids.push(h('div', {class:'note', textContent:'卒業年月が今月以降なら、履歴書には「卒業見込」と自動で表示されます'}));
       box.append(h('div', {class:'card'}, kids));
     });
     const wc = h('input', {type:'checkbox', checked:!!data.work.on});
