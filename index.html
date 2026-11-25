@@ -174,6 +174,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     </details>
 
     <details class="sec" open><summary>学歴・職歴</summary>
+      <div class="note" id="histEx"></div>
       <div id="histList"></div>
       <div class="btns">
         <button data-add="row">＋行を追加</button>
@@ -343,6 +344,29 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     while (pos < v.length && seen < n) { if (/\d/.test(v[pos])) seen++; pos++; }
     try { el.setSelectionRange(pos, pos); } catch (e) {}
   }
+  // ---- 生年月日から、ストレートの場合の入学・卒業の年月を自動入力 ----
+  // 4月2日〜翌4月1日生まれが同じ学年。小学校入学は学年の年+6年の4月。専門学校は2年制として計算（変更は手で直せます）
+  function straight(birth) {
+    const b = ymd(birth); if (!b) return null;
+    const E = (b.mo > 4 || (b.mo === 4 && b.d >= 2) ? b.y : b.y - 1) + 6;   // 小学校入学の年
+    return {'中学校|卒業':[E + 9, 3], '高校|入学':[E + 9, 4], '高校|卒業':[E + 12, 3], '専門学校|入学':[E + 12, 4], '専門学校|卒業':[E + 14, 3]};
+  }
+  const rowKey = r => r.pre ? r.pre + '|' + (r.link ? '卒業' : r.ev) : '';
+  function histExample() {
+    const sample = !ymd(data.birth), st = straight(sample ? '2006-05-10' : data.birth);
+    const f = k => st[k][0] + '年' + st[k][1] + '月';
+    $('histEx').textContent = (sample ? '例）2006年5月10日生まれ（ストレート）の場合：' : 'ストレートの場合（生年月日から自動入力）：')
+      + `中学校卒業 ${f('中学校|卒業')} ／ 高校入学 ${f('高校|入学')} ／ 高校卒業 ${f('高校|卒業')} ／ 専門学校入学 ${f('専門学校|入学')} ／ 専門学校卒業見込 ${f('専門学校|卒業')}（2年制）`;
+  }
+  function autoYears() {
+    const st = straight(data.birth); histExample(); if (!st) return;
+    data.hist.forEach(r => {
+      const t = r.kind === 'row' && st[rowKey(r)]; if (!t) return;
+      const y = String(t[0]), m = String(t[1]);
+      if ((!r.y && !r.m) || (r.y === r._ay && r.m === r._am)) { r.y = y; r.m = m; r._ay = y; r._am = m; }   // 空か、前回の自動入力のままの行だけ
+    });
+    buildHist(); save(); render();
+  }
   // ---- 郵便番号→住所の自動入力（同梱データ data/zipdata.txt を読むだけ。入力した番号は外に出ません） ----
   let zipMap = null, zipLoading = null;
   function loadZip() {
@@ -376,6 +400,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     el.addEventListener('input', () => {
       if (NUMF[k]) numMark(k);
       if (FMT[k] && (!NUMF[k] || okNum(el.value))) applyFmt(el, FMT[k]); data[k] = el.value; save(); render();
+      if (k === 'birth') autoYears();
       if (k === 'zip') zipToAddr('zip', 'addr', 'addrFurigana'); else if (k === 'cZip') zipToAddr('cZip', 'cAddr', 'cFurigana');
     });
   });
@@ -892,7 +917,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     pb.textContent = errs.length ? 'エラーを直すとPDFを作成できます' : 'PDFを作成して保存';
   }
 
-  fillForm(); render();
+  fillForm(); autoYears(); render();
 })();
 </script>
 </body>
