@@ -75,10 +75,44 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .t.tb { display:block; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; padding:0 1.7mm; }
 .addr { line-height:4.2mm; white-space:normal; overflow-wrap:anywhere; }
 
+details.sec { border:1px solid #e1e1e1; border-radius:10px; margin:0 0 12px; padding:0 12px 12px; min-width:0; }
+details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); padding:12px 0 4px; cursor:pointer; }
+.bar { margin-bottom:10px; }
+.bar .pdfres:empty { display:none; }
+.tabs { display:none; }
+.card .ct { font-size:14px; font-weight:700; margin:2px 2px 6px; }
+.card .cl.wrap { flex-wrap:wrap; }
+.card button.addbelow { width:100%; margin-top:6px; }
+
 @media (max-width:1100px) {
   .app { grid-template-columns:1fr; }
   .panel { height:auto; position:static; }
   .preview { padding:12px; }
+}
+/* スマホ：入力／プレビューのタブ、PDFボタンは画面下に固定、入力欄は16px以上（iOSの自動拡大を防ぐ） */
+@media (max-width:700px) {
+  .tabs { display:flex; position:sticky; top:0; z-index:7; background:#fff; border-bottom:1px solid #ddd; }
+  .tabs button { flex:1; border:0; border-radius:0; background:#fff; padding:14px 0; font-size:16px; color:#555; border-bottom:3px solid transparent; }
+  .tabs button.on { color:var(--accent); font-weight:700; border-bottom-color:var(--accent); }
+  .panel { padding:12px 12px 190px; border-right:0; }
+  .panel h1 { font-size:18px; }
+  /* 入力タブでは画面外に置く（display:noneだと、PDF作成時に文字位置を測れないため） */
+  body:not(.pv) .preview { position:absolute; left:-10000px; top:0; width:100vw; visibility:hidden; }
+  body.pv .panel > :not(.bar) { display:none; }
+  body.pv .panel { padding:0; }
+  body.pv .preview { padding:8px 8px 190px; }
+  .bar { position:fixed; left:0; right:0; bottom:0; z-index:6; margin:0; background:#fff; border-top:1px solid #ccc;
+         padding:8px 12px calc(8px + env(safe-area-inset-bottom)); box-shadow:0 -2px 8px rgba(0,0,0,.12); }
+  .bar #pdfInfo { display:none; }
+  .bar #errNote { max-height:5.2em; overflow:auto; font-size:12px; margin:0 0 6px; }
+  .bar #errNote div { margin:2px 0; }
+  input[type=text], input[type=date], input[type=tel], input[type=email], textarea, select { font-size:16px; padding:11px 10px; }
+  .cl input, .cl select { font-size:16px; padding:10px 8px; }
+  button { min-height:44px; font-size:14px; }
+  button.primary { font-size:16px; min-height:50px; }
+  .cl .w56 { width:72px; } .cl .w44 { width:60px; }
+  .cl button { padding:4px 11px; }
+  label { font-size:13px; margin-top:12px; }
 }
 /* 印刷：B4横(364×257mm)1枚。縮小なし */
 @media print {
@@ -93,94 +127,86 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 </head>
 <body>
 <div class="app">
+  <div class="tabs ui"><button id="tabIn" class="on">入力</button><button id="tabPv">プレビュー</button></div>
   <aside class="panel ui">
-    <h1>履歴書メーカー</h1>
-    <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用PCでは使用後に「データを消去」を押してください。</div>
-
-    <button class="primary" id="btnPdf">PDFを作成して保存</button>
-    <div class="note" id="pdfInfo">B4横1枚のPDFファイルを、この端末の中だけで作ります（スマホ・パソコン共通）。</div>
-    <div class="pdfres" id="pdfResult"></div>
-    <div class="btns"><button id="btnPrint">印刷画面を開く（パソコン向け）</button></div>
-    <div class="note">印刷画面を使う場合は、送信先を「PDFに保存」、余白を「なし」、倍率を「100%」にしてください。</div>
-    <div class="btns" style="margin-bottom:10px">
-      <button id="btnExport">バックアップ保存(JSON)</button>
-      <button id="btnImport">バックアップ読込</button>
-      <button id="btnClear" class="danger">データを消去</button>
-      <input type="file" id="fileImport" accept="application/json" hidden>
+    <div class="bar">
+      <div class="note err" id="errNote"></div>
+      <div class="pdfres" id="pdfResult"></div>
+      <button class="primary" id="btnPdf">PDFを作成して保存</button>
+      <div class="note" id="pdfInfo">B4横1枚のPDFを、この端末の中だけで作ります（スマホ・パソコン共通）。</div>
     </div>
-    <div class="msgs"><div class="note err" id="errNote"></div><div class="note warn" id="warnNote"></div></div>
+    <h1>履歴書メーカー</h1>
+    <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用の端末では使用後に「データを消去」を押してください。</div>
+    <div class="msgs"><div class="note warn" id="warnNote"></div></div>
 
-    <fieldset><legend>基本情報</legend>
-      <label>日付（作成日）</label><input type="date" id="f_date">
-      <div class="row2">
-        <div><label>ふりがな</label><input type="text" id="f_furigana" autocomplete="off"></div>
-        <div><label>氏名</label><input type="text" id="f_name" autocomplete="off"></div>
-      </div>
-      <label>生年月日</label><input type="date" id="f_birth">
+    <details class="sec" open><summary>基本情報</summary>
+      <label for="f_date">日付（作成日）</label><input type="date" id="f_date">
+      <label for="f_name">氏名</label><input type="text" id="f_name" autocomplete="off" placeholder="例：名古屋 太郎">
+      <label for="f_furigana">ふりがな（氏名を入力してから）</label><input type="text" id="f_furigana" autocomplete="off" placeholder="例：なごや たろう">
+      <label for="f_birth">生年月日</label><input type="date" id="f_birth">
       <label>顔写真（任意・端末内のみで処理）</label>
       <div class="photo-row">
         <div class="photo-thumb" id="photoThumb"></div>
         <div><input type="file" id="f_photo" accept="image/*"> <button id="btnPhotoDel">削除</button></div>
       </div>
-    </fieldset>
+    </details>
 
-    <fieldset><legend>現住所</legend>
-      <label>ふりがな</label><input type="text" id="f_addrFurigana" autocomplete="off">
-      <div class="row2">
-        <div><label>郵便番号</label><input type="text" id="f_zip" inputmode="numeric" placeholder="460-0001" autocomplete="off"></div>
-        <div></div>
-      </div>
-      <label>住所</label><input type="text" id="f_addr" autocomplete="off">
-      <div class="row2">
-        <div><label>電話</label><input type="tel" id="f_tel" autocomplete="off"></div>
-        <div><label>携帯</label><input type="tel" id="f_mobile" autocomplete="off"></div>
-      </div>
-      <label>E-mailアドレス</label><input type="email" id="f_email" autocomplete="off">
-    </fieldset>
+    <details class="sec" open><summary>現住所</summary>
+      <label for="f_zip">郵便番号</label><input type="text" id="f_zip" inputmode="numeric" placeholder="460-0001" autocomplete="off">
+      <label for="f_addr">住所</label><input type="text" id="f_addr" autocomplete="off">
+      <label for="f_addrFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_addrFurigana" autocomplete="off">
+      <label for="f_tel">電話</label><input type="tel" id="f_tel" autocomplete="off">
+      <label for="f_mobile">携帯</label><input type="tel" id="f_mobile" autocomplete="off">
+      <label for="f_email">E-mailアドレス</label><input type="email" id="f_email" autocomplete="off">
+    </details>
 
-    <fieldset><legend>連絡先（休暇中の住所など）</legend>
+    <details class="sec" open><summary>連絡先（休暇中の住所など）</summary>
       <label class="chk"><input type="checkbox" id="f_same"> 現住所と同じ（枠の中央に「同　上」と表示）</label>
-      <label>ふりがな</label><input type="text" id="f_cFurigana" autocomplete="off">
-      <div class="row2">
-        <div><label>郵便番号</label><input type="text" id="f_cZip" inputmode="numeric" autocomplete="off"></div>
-        <div></div>
-      </div>
-      <label>住所</label><input type="text" id="f_cAddr" autocomplete="off">
-      <div class="row2">
-        <div><label>電話</label><input type="tel" id="f_cTel" autocomplete="off"></div>
-        <div><label>携帯</label><input type="tel" id="f_cMobile" autocomplete="off"></div>
-      </div>
-    </fieldset>
+      <label for="f_cZip">郵便番号</label><input type="text" id="f_cZip" inputmode="numeric" autocomplete="off">
+      <label for="f_cAddr">住所</label><input type="text" id="f_cAddr" autocomplete="off">
+      <label for="f_cFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_cFurigana" autocomplete="off">
+      <label for="f_cTel">電話</label><input type="tel" id="f_cTel" autocomplete="off">
+      <label for="f_cMobile">携帯</label><input type="tel" id="f_cMobile" autocomplete="off">
+    </details>
 
-    <fieldset><legend>学歴・職歴（最大14行）</legend>
+    <details class="sec" open><summary>学歴・職歴</summary>
       <div id="histList"></div>
       <div class="btns">
-        <button data-add="row">＋学校・会社の行</button>
-        <button data-add="学歴">＋「学歴」見出し</button>
-        <button data-add="職歴">＋「職歴」見出し</button>
-        <button data-add="以上">＋「以上」</button>
+        <button data-add="row">＋行を追加</button>
+        <button data-add="職歴">＋「職歴」の見出し</button>
       </div>
-      <div class="note">入学・卒業などは右寄せで「以上」と同じ位置に出ます。学科・コースを入れると、2行目・3行目を使い、1文字ずつ字下げして表示し、入学・卒業などは最後の行に入ります（その分、行数を使います）。高校の全日制→通信制のように転学した場合は、学校の行を分けて「転学」「転入学」を選んでください。</div>
-    </fieldset>
+      <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（使わない行は空のままで大丈夫です）。最後の行には「以上」が自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
+    </details>
 
-    <fieldset><legend>免許・資格等（最大7行）</legend>
+    <details class="sec" open><summary>免許・資格等（最大7行）</summary>
       <div id="licList"></div>
       <div class="btns"><button data-add="lic">＋行を追加</button></div>
       <div class="note">「検定」を選ぶと「合格」、「資格」を選ぶと「取得」を右寄せで入れます。</div>
-    </fieldset>
+    </details>
 
-    <fieldset><legend>趣味・得意な学科・スポーツ等</legend>
+    <details class="sec" open><summary>趣味・得意な学科・スポーツ等</summary>
       <textarea id="f_hobby" rows="4"></textarea><div class="note" id="cnt_hobby"></div>
-    </fieldset>
-    <fieldset><legend>特技・自己啓発等</legend>
+    </details>
+    <details class="sec" open><summary>特技・自己啓発等</summary>
       <textarea id="f_skill" rows="4"></textarea><div class="note" id="cnt_skill"></div>
-    </fieldset>
-    <fieldset><legend>志望の動機</legend>
+    </details>
+    <details class="sec" open><summary>志望の動機</summary>
       <textarea id="f_motive" rows="6"></textarea><div class="note" id="cnt_motive"></div>
-    </fieldset>
-    <fieldset><legend>備考</legend>
+    </details>
+    <details class="sec" open><summary>備考</summary>
       <textarea id="f_remarks" rows="3"></textarea><div class="note" id="cnt_remarks"></div>
-    </fieldset>
+    </details>
+
+    <details class="sec"><summary>その他（印刷・バックアップ・消去）</summary>
+      <div class="btns"><button id="btnPrint">印刷画面を開く（パソコン向け）</button></div>
+      <div class="note">印刷画面を使う場合は、送信先を「PDFに保存」、余白を「なし」、倍率を「100%」にしてください。</div>
+      <div class="btns">
+        <button id="btnExport">バックアップ保存(JSON)</button>
+        <button id="btnImport">バックアップ読込</button>
+        <button id="btnClear" class="danger">データを消去</button>
+        <input type="file" id="fileImport" accept="application/json" hidden>
+      </div>
+    </details>
   </aside>
 
   <main class="preview">
@@ -209,14 +235,23 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   const COURSES = ['全日制','定時制','通信制'];
   const TEXT_RIGHT = 165.5;          // 入学・卒業・「以上」などの右端（全行で共通）
 
-  const blankRow = () => ({kind:'row', y:'', m:'', t:'', kt:'', dept:'', course:'', ev:''});
+  const blankRow = () => ({kind:'row', y:'', m:'', t:'', kt:'', dept:'', course:'', ev:'', pre:'', link:false});
+  // 最初から用意する学歴（link:true の行は、直前の「入学」の行の学校名・学科・コースを自動で使う）
+  const presetHist = () => [
+    {kind:'head', t:'学歴'},
+    Object.assign(blankRow(), {pre:'中学校', ev:'卒業'}),
+    Object.assign(blankRow(), {pre:'高校', ev:'入学'}),
+    Object.assign(blankRow(), {pre:'高校', ev:'卒業', link:true}),
+    Object.assign(blankRow(), {pre:'専門学校', ev:'入学'}),
+    Object.assign(blankRow(), {pre:'専門学校', ev:'卒業見込', link:true})
+  ];
   const blankLic = () => ({y:'', m:'', t:'', lk:''});
   const blank = () => ({
     date: new Date().toISOString().slice(0,10),
     furigana:'', name:'', birth:'', photo:'',
     addrFurigana:'', zip:'', addr:'', tel:'', mobile:'', email:'',
     same:false, cFurigana:'', cZip:'', cAddr:'', cTel:'', cMobile:'',
-    hist:[blankRow()], lic:[blankLic()],
+    hist:presetHist(), lic:[blankLic()],
     hobby:'', skill:'', motive:'', remarks:''
   });
 
@@ -224,11 +259,13 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     d = Object.assign(blank(), d);
     if (d.wish && !d.remarks) d.remarks = d.wish;
     d.hist = (d.hist || []).map(r => {
+      if (r.kind === 'head') return r;
       if (r.kind) return Object.assign(blankRow(), r);
       if (!r.y && !r.m && ['学歴','職歴','以上'].includes(r.t)) return {kind:'head', t:r.t};
       return Object.assign(blankRow(), {y:r.y||'', m:r.m||'', t:r.t||''});
-    });
-    if (!d.hist.length) d.hist = [blankRow()];
+    }).filter(r => !(r.kind === 'head' && r.t === '以上'));   // 「以上」は最終行に自動で入る
+    const blankOnly = d.hist.length <= 1 && d.hist.every(r => r.kind === 'row' && !r.y && !r.m && !r.t && !r.ev);
+    if (!d.hist.length || blankOnly) d.hist = presetHist();
     d.lic = (d.lic || []).map(r => Object.assign(blankLic(), r));
     if (!d.lic.length) d.lic = [blankLic()];
     return d;
@@ -294,17 +331,30 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 
   function buildHist() {
     const box = $('histList'); box.textContent = '';
+    const GRAD = [['卒業','卒業'], ['卒業見込','卒業見込']];
     data.hist.forEach((r, i) => {
       if (r.kind === 'head') {
         box.append(h('div', {class:'card head'}, h('b', {textContent:'見出し：' + r.t}), moveBtns(data.hist, i, buildHist)));
         return;
       }
-      box.append(h('div', {class:'card'},
-        h('div', {class:'cl'}, input(r,'y','年','w56','numeric'), input(r,'m','月','w44','numeric'),
-          select(r,'ev',[['','（入学・卒業など）'], ...EVENTS.map(e => [e,e])]), moveBtns(data.hist, i, buildHist)),
-        h('div', {class:'cl'}, input(r,'t','学校名・会社名'), select(r,'kt',[['','課程なし'], ...COURSES.map(c => [c, c + '課程'])],'w90')),
-        h('div', {class:'cl'}, input(r,'dept','学科（2行目）'), input(r,'course','コース（3行目）'))
-      ));
+      const kids = [];
+      if (r.pre) kids.push(h('div', {class:'ct', textContent:r.pre + '　' + (r.link ? '卒業' : r.ev)}));
+      const top = [input(r,'y','年','w56','numeric'), input(r,'m','月','w44','numeric')];
+      if (r.link) top.push(select(r,'ev',GRAD));
+      else if (!r.pre) top.push(select(r,'ev',[['','（入学・卒業など）'], ...EVENTS.map(e => [e,e])]));
+      top.push(...moveBtns(data.hist, i, buildHist));
+      kids.push(h('div', {class:'cl'}, top));
+      if (r.link) {
+        kids.push(h('div', {class:'note', textContent:'学校名・学科は、すぐ上の「入学」の行と同じ内容が入ります'}));
+      } else {
+        kids.push(h('div', {class:'cl'}, input(r,'t', r.pre ? r.pre + '名' : '学校名・会社名')));
+        if (!r.pre || r.pre === '高校') kids.push(h('div', {class:'cl'}, select(r,'kt',[['','課程なし'], ...COURSES.map(c => [c, c + '課程'])])));
+        if (r.ev !== '卒業' || !r.pre) kids.push(h('div', {class:'cl'}, input(r,'dept','学科（2行目）'), input(r,'course','コース（3行目）')));
+      }
+      const ab = h('button', {class:'addbelow', textContent:'＋この下に行を追加（転学・転入学など）'});
+      ab.addEventListener('click', () => { data.hist.splice(i + 1, 0, Object.assign(blankRow(), {ev:'転入学'})); save(); buildHist(); render(); });
+      kids.push(ab);
+      box.append(h('div', {class:'card'}, kids));
     });
   }
   function buildLic() {
@@ -373,6 +423,14 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   $('btnPrint').addEventListener('click', () => { document.fonts.ready.then(() => { render(); if (!$('btnPrint').disabled) window.print(); }); });
   document.fonts.ready.then(render);
   window.addEventListener('resize', fitPreview);
+  // スマホ：入力／プレビューの切り替え
+  const showTab = pv => {
+    document.body.classList.toggle('pv', pv);
+    $('tabIn').classList.toggle('on', !pv); $('tabPv').classList.toggle('on', pv);
+    window.scrollTo(0, 0); fitPreview();
+  };
+  $('tabIn').addEventListener('click', () => showTab(false));
+  $('tabPv').addEventListener('click', () => showTab(true));
 
 
   // ================= PDFをアプリ内で作る（外部通信なし） =================
@@ -627,19 +685,23 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 
     // ---- 学歴・職歴：行に展開（学科・コースは2・3行目、1文字ずつ字下げ） ----
     const lines = [];
-    d.hist.forEach(r => {
+    d.hist.forEach((r, i) => {
       if (r.kind === 'head') { lines.push({head:r.t}); return; }
+      if (r.link) {   // 卒業の行は、すぐ上の行の学校・学科・コースを引き継ぐ
+        const p = d.hist[i - 1];
+        if (p && p.kind === 'row') r = Object.assign({}, r, {t:p.t, kt:p.kt, dept:p.dept, course:p.course});
+      }
       const first = (r.t || '') + (r.kt ? ' ' + r.kt + '課程' : '');
       const subs = [r.dept, r.course].filter(Boolean);
-      const empty = !r.y && !r.m && !first && !subs.length && !r.ev;
+      const empty = r.link ? (!r.y && !r.m) : (!r.y && !r.m && !first && !subs.length && !(r.ev && !r.pre));
       if (empty) return;
       lines.push({y:r.y, m:r.m, text:first, indent:0});
       subs.forEach((s, i) => lines.push({text:s, indent:i + 1}));
       lines[lines.length - 1].ev = r.ev;   // 入学・卒業などは、その学校の最後の行に入れる
     });
-    const histOver = lines.length - HIST_ROWS;
+    const histOver = lines.length - (HIST_ROWS - 1);   // 最終行は「以上」用
     for (let k = 0; k < HIST_ROWS; k++) {
-      const ln_ = lines[k] || {};
+      const ln_ = k === HIST_ROWS - 1 ? {head:'以上'} : (lines[k] || {});
       const ry = L.yB0 + k * pB;
       // 年・月の目盛りは全行に入れる
       T(41, ry, 13, pB, esc(ln_.y || ''), 'r', fs(BODY_PT)); T(54.3, ry, 3.2, pB, '年', '', fs(9));
@@ -687,7 +749,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   function fitPreview() {
     const sp = $('spread'); if (!sp) return;
     const avail = $('pages').parentElement.clientWidth - 48;
-    sp.style.zoom = Math.min(1, Math.max(.3, avail / (364 * 96 / 25.4)));
+    sp.style.zoom = Math.min(1, Math.max(.15, avail / (364 * 96 / 25.4)));
   }
 
   const lineCount = el => {
@@ -697,7 +759,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 
   function check({histOver, licOver}) {
     const errs = [], warns = [];
-    if (histOver > 0) errs.push(`学歴・職歴が${HIST_ROWS}行を超えています（あと${histOver}行減らしてください。学科・コースも行を使います）`);
+    if (histOver > 0) errs.push(`学歴・職歴が${HIST_ROWS - 1}行を超えています（最後の行は「以上」用です。あと${histOver}行減らしてください。学科・コースも行を使います）`);
     if (licOver > 0) errs.push(`免許・資格が${LIC_ROWS}行を超えています（あと${licOver}行減らしてください）`);
     // 住所：1行なら枠の中央、2行以上なら郵便番号の下から
     document.querySelectorAll('.t.af').forEach(box => {
