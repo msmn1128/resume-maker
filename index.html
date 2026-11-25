@@ -907,7 +907,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       $('cnt_' + key).textContent = `${guide}　現在 ${Math.ceil(weight(text))}文字・${used}行`;
       $('cnt_' + key).className = 'note' + (over || short ? ' err' : '');
       if (over) errs.push(`「${p.label}」が規定の${p.lines}行を超えています（${key === 'remarks' ? '約' + p.cap : p.lo + '〜' + p.hi}文字が目安）`);
-      else if (short) errs.push(`「${p.label}」が最後の行（${p.lines}行目）まで届いていません（現在${used}行・目安${p.lo}〜${p.hi}文字）`);
+      else if (short) errs.push(`「${p.label}」が最後の行（${p.lines}行目）まで届きません（現在${used}行・目安${p.lo}〜${p.hi}文字）`);
     });
     $('errNote').innerHTML = errs.map(e => `<div>⚠ ${esc(e)}</div>`).join('');
     $('warnNote').innerHTML = warns.map(e => `<div>・${esc(e)}</div>`).join('');
