@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- 外部への通信を一切禁止（入力データが外に出ないことをブラウザ側で保証） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <title>履歴書メーカー</title>
 <style>
@@ -328,9 +328,33 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     while (pos < v.length && seen < n) { if (/\d/.test(v[pos])) seen++; pos++; }
     try { el.setSelectionRange(pos, pos); } catch (e) {}
   }
+  // ---- 郵便番号→住所の自動入力（同梱データ data/zipdata.txt を読むだけ。入力した番号は外に出ません） ----
+  let zipMap = null, zipLoading = null;
+  function loadZip() {
+    if (zipMap) return Promise.resolve(zipMap);
+    return zipLoading || (zipLoading = fetch('data/zipdata.txt').then(r => { if (!r.ok) throw 0; return r.text(); }).then(t => {
+      zipMap = new Map(); let base = '';
+      t.split('\n').forEach(l => { const [z, b, tw] = l.split('\t'); if (b) base = b; zipMap.set(z, base + (tw || '')); });
+      return zipMap;
+    }).catch(() => { zipLoading = null; return null; }));
+  }
+  const autoFilled = {};   // 自動入力した住所（あとから手で直した住所は上書きしない）
+  async function zipToAddr(zipKey, addrKey) {
+    const z = digits(data[zipKey]); if (z.length !== 7) return;
+    const m = await loadZip(); const a = m && m.get(z); if (!a) return;
+    if (digits(data[zipKey]) !== z) return;                       // 待っている間に番号が変わった
+    const cur = data[addrKey] || '';
+    if (cur && cur !== autoFilled[addrKey]) return;               // 手で入力済みの住所は上書きしない
+    autoFilled[addrKey] = a; data[addrKey] = a;
+    const el = $('f_' + addrKey); el.value = a; save(); render();
+    if (document.activeElement === $('f_' + zipKey)) { el.focus(); el.setSelectionRange(a.length, a.length); }   // 続けて番地を入力できるように
+  }
   simple.forEach(k => {
     const el = $('f_' + k);
-    el.addEventListener('input', () => { if (FMT[k]) applyFmt(el, FMT[k]); data[k] = el.value; save(); render(); });
+    el.addEventListener('input', () => {
+      if (FMT[k]) applyFmt(el, FMT[k]); data[k] = el.value; save(); render();
+      if (k === 'zip') zipToAddr('zip', 'addr'); else if (k === 'cZip') zipToAddr('cZip', 'cAddr');
+    });
   });
   $('f_same').addEventListener('change', e => { data.same = e.target.checked; syncSame(); save(); render(); });
   function syncSame() { ['cFurigana','cZip','cAddr'].forEach(k => $('f_' + k).disabled = data.same); }
