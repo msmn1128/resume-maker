@@ -37,7 +37,11 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 .photo-row { display:flex; gap:10px; align-items:center; }
 .photo-row > div:last-child { min-width:0; }
-.photo-thumb { width:60px; height:80px; border:1px dashed #aaa; background:#fafafa center/cover no-repeat; flex:none; }
+.photo-ed { margin-top:8px; }
+.photo-ed canvas { display:block; width:150px; height:200px; border:1px solid #bbb; background:#fff; touch-action:none; cursor:grab; }
+.photo-ed canvas:active { cursor:grabbing; }
+.photo-ed .zoom { display:flex; align-items:center; gap:8px; margin-top:6px; font-size:13px; max-width:260px; }
+.photo-ed .zoom input { flex:1; }
 .note { font-size:11px; color:#777; margin-top:4px; line-height:1.5; }
 .note.err { color:#b3261e; font-weight:600; }
 .note.warn { color:#9a6700; }
@@ -151,8 +155,12 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <label for="f_birth">生年月日</label><input type="date" id="f_birth">
       <label>顔写真（任意・端末内のみで処理）</label>
       <div class="photo-row">
-        <div class="photo-thumb" id="photoThumb"></div>
         <div><input type="file" id="f_photo" accept="image/*"> <button id="btnPhotoDel">削除</button></div>
+      </div>
+      <div class="photo-ed" id="photoEd" hidden>
+        <canvas id="photoCv" width="300" height="400"></canvas>
+        <div class="zoom"><span>縮小</span><input type="range" id="photoZoom" min="50" max="300" value="100"><span>拡大</span></div>
+        <div class="note">写真をドラッグすると位置を動かせます（スマホは2本指でも拡大・縮小できます）。この枠の見え方が、そのまま履歴書に入ります。</div>
       </div>
     </details>
 
@@ -287,7 +295,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   const blankLic = () => ({y:'', m:'', t:'', lk:''});
   const blank = () => ({
     date: new Date().toISOString().slice(0,10),
-    furigana:'', name:'', birth:'', photo:'',
+    furigana:'', name:'', birth:'', photo:'', photoSrc:'', photoView:{z:1, x:0, y:0},
     addrFurigana:'', zip:'', addr:'', tel:'', mobile:'', email:'',
     same:false, cFurigana:'', cZip:'', cAddr:'', cTel:'', cMobile:'',
     edu:blankEdu(), work:{on:false, rows:[]}, lic:[blankLic()],
@@ -313,6 +321,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     d.edu = Object.assign(blankEdu(), d.edu);
     d.edu.jhs = Object.assign({t:'', ey:'', em:''}, d.edu.jhs, {_a:(d.edu.jhs && d.edu.jhs._a) || {}});
     ['hs', 'col'].forEach(k => { d.edu[k] = Object.assign(blankSchool(), d.edu[k]); d.edu[k]._a = d.edu[k]._a || {}; });
+    d.photoView = Object.assign({z:1, x:0, y:0}, d.photoView);
     d.work = Object.assign({on:false, rows:[]}, d.work); d.work.rows = d.work.rows.map(r => Object.assign(blankWork(), r));
     ['addrFurigana', 'cFurigana'].forEach(k => { if (d[k] === 'undefined') d[k] = ''; });   // 旧データの不具合で入った文字を消す
     d.lic = (d.lic || []).map(r => { r = Object.assign(blankLic(), r); r.lk = {'検定':'合格', '資格':'取得'}[r.lk] || r.lk; return r; });   // 旧形式（検定→合格、資格→取得）を引き継ぐ
@@ -447,7 +456,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     simple.forEach(k => $('f_' + k).value = data[k] || '');
     Object.keys(NUMF).forEach(numMark);
     $('f_same').checked = !!data.same; syncSame();
-    buildHist(); buildLic(); updateThumb();
+    buildHist(); buildLic(); updatePhotoEd();
   }
 
   // 小さなDOM生成ヘルパー
@@ -539,28 +548,69 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     save(); render();
   });
 
-  // ---- 写真（縮小してJPEG化、端末内のみ） ----
+  // ---- 写真（端末内のみ。元画像を縮小して持ち、拡大縮小・移動した見え方を 300×400 のJPEGにして履歴書に入れる） ----
+  const PW = 300, PHT = 400;
+  const cv = $('photoCv'), cctx = cv.getContext('2d');
+  let phImg = null, raf = 0;
+  function phClamp() {   // 画像が枠より大きい方向は、枠からはみ出して空白が出ない範囲に収める
+    const v = data.photoView; v.z = Math.min(3, Math.max(0.5, v.z || 1));
+    if (!phImg) return;
+    const s = Math.max(PW / phImg.width, PHT / phImg.height) * v.z, w = phImg.width * s, hh = phImg.height * s;
+    const mx = Math.max(0, (w - PW) / 2), my = Math.max(0, (hh - PHT) / 2);
+    v.x = Math.min(mx, Math.max(-mx, v.x || 0)); v.y = Math.min(my, Math.max(-my, v.y || 0));
+    return {s, w, hh};
+  }
+  function phDraw() {
+    cctx.fillStyle = '#fff'; cctx.fillRect(0, 0, PW, PHT);
+    if (!phImg) return;
+    const g = phClamp(), v = data.photoView;
+    cctx.drawImage(phImg, PW / 2 + v.x - g.w / 2, PHT / 2 + v.y - g.hh / 2, g.w, g.hh);
+  }
+  function phCommit() { phDraw(); data.photo = cv.toDataURL('image/jpeg', 0.85); save(); render(); }
+  function phCommitSoon() { phDraw(); if (!raf) raf = requestAnimationFrame(() => { raf = 0; phCommit(); }); }
+  function updatePhotoEd() {
+    $('photoEd').hidden = !data.photo;
+    if (!data.photo) { phImg = null; return; }
+    $('photoZoom').value = Math.round(data.photoView.z * 100);
+    const im = new Image();
+    im.onload = () => { phImg = im; phDraw(); };
+    im.src = data.photoSrc || data.photo;   // 元画像がない古いデータは、保存済みの写真から調整する
+  }
   $('f_photo').addEventListener('change', e => {
     const f = e.target.files[0]; if (!f) return;
     if (!f.type.startsWith('image/')) { alert('画像ファイルを選んでください'); return; }
     const url = URL.createObjectURL(f);
     const img = new Image();
     img.onload = () => {
-      const W = 300, H = 400;
-      const c = document.createElement('canvas'); c.width = W; c.height = H;
-      const ctx = c.getContext('2d');
-      const s = Math.max(W / img.width, H / img.height);
-      const w = img.width * s, hh = img.height * s;
-      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,W,H);
-      ctx.drawImage(img, (W-w)/2, (H-hh)/2, w, hh);
-      data.photo = c.toDataURL('image/jpeg', 0.85);
-      URL.revokeObjectURL(url); save(); updateThumb(); render();
+      const k = Math.min(1, 1000 / Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      data.photoSrc = c.toDataURL('image/jpeg', 0.9); data.photoView = {z:1, x:0, y:0};
+      URL.revokeObjectURL(url); phImg = c;   // 縮小後の画像から調整する
+      $('photoEd').hidden = false; $('photoZoom').value = 100; phCommit();
     };
     img.onerror = () => { URL.revokeObjectURL(url); alert('画像を読み込めませんでした'); };
     img.src = url; e.target.value = '';
   });
-  $('btnPhotoDel').addEventListener('click', () => { data.photo = ''; save(); updateThumb(); render(); });
-  function updateThumb() { $('photoThumb').style.backgroundImage = data.photo ? `url("${data.photo}")` : ''; }
+  $('btnPhotoDel').addEventListener('click', () => { data.photo = ''; data.photoSrc = ''; data.photoView = {z:1, x:0, y:0}; phImg = null; save(); updatePhotoEd(); render(); });
+  // ドラッグで移動、2本指（またはスライダー・ホイール）で拡大縮小
+  const pts = new Map(); let pinch = 0;
+  cv.addEventListener('pointerdown', e => { cv.setPointerCapture(e.pointerId); pts.set(e.pointerId, {x:e.clientX, y:e.clientY}); pinch = 0; });
+  cv.addEventListener('pointermove', e => {
+    const q = pts.get(e.pointerId); if (!q || !phImg) return;
+    const f = PW / cv.getBoundingClientRect().width, v = data.photoView;
+    if (pts.size >= 2) {
+      q.x = e.clientX; q.y = e.clientY;
+      const [a, b] = [...pts.values()], d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (pinch) { v.z *= d / pinch; $('photoZoom').value = Math.round(Math.min(3, Math.max(0.5, v.z)) * 100); }
+      pinch = d;
+    } else { v.x += (e.clientX - q.x) * f; v.y += (e.clientY - q.y) * f; q.x = e.clientX; q.y = e.clientY; }
+    phCommitSoon();
+  });
+  const phUp = e => { pts.delete(e.pointerId); pinch = 0; };
+  cv.addEventListener('pointerup', phUp); cv.addEventListener('pointercancel', phUp);
+  cv.addEventListener('wheel', e => { e.preventDefault(); data.photoView.z *= e.deltaY < 0 ? 1.06 : 1 / 1.06; $('photoZoom').value = Math.round(Math.min(3, Math.max(0.5, data.photoView.z)) * 100); phCommitSoon(); }, {passive:false});
+  $('photoZoom').addEventListener('input', e => { data.photoView.z = e.target.value / 100; phCommitSoon(); });
 
   // ---- バックアップ / 消去 ----
   $('btnExport').addEventListener('click', () => {
