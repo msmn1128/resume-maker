@@ -183,7 +183,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     <details class="sec" open><summary>免許・資格等（最大7行）</summary>
       <div id="licList"></div>
       <div class="btns"><button data-add="lic">＋行を追加</button></div>
-      <div class="note">年・月は数字のみ入力してください。「検定」を選ぶと「合格」、「資格」を選ぶと「取得」を右寄せで入れます。</div>
+      <div class="note">年・月は数字のみ入力してください。「資格」を選ぶと「合格」、「免許」を選ぶと「取得」を右寄せで入れます。点数など、どちらも付けたくないときは「語尾なし」を選んでください。</div>
     </details>
 
     <details class="sec" open><summary>趣味・得意な学科・スポーツ等</summary>
@@ -316,7 +316,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     ['hs', 'col'].forEach(k => { d.edu[k] = Object.assign(blankSchool(), d.edu[k]); d.edu[k]._a = d.edu[k]._a || {}; });
     d.work = Object.assign({on:false, rows:[]}, d.work); d.work.rows = d.work.rows.map(r => Object.assign(blankWork(), r));
     ['addrFurigana', 'cFurigana'].forEach(k => { if (d[k] === 'undefined') d[k] = ''; });   // 旧データの不具合で入った文字を消す
-    d.lic = (d.lic || []).map(r => Object.assign(blankLic(), r));
+    d.lic = (d.lic || []).map(r => { r = Object.assign(blankLic(), r); r.lk = {'検定':'合格', '資格':'取得'}[r.lk] || r.lk; return r; });   // 旧形式（検定→合格、資格→取得）を引き継ぐ
     if (!d.lic.length) d.lic = [blankLic()];
     return d;
   }
@@ -527,7 +527,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     data.lic.forEach((r, i) => {
       box.append(h('div', {class:'card'},
         h('div', {class:'cl'}, input(r,'y','年','w56','numeric'), input(r,'m','月','w44','numeric'),
-          select(r,'lk',[['','（種類）'],['検定','検定 → 合格'],['資格','資格 → 取得']]), moveBtns(data.lic, i, buildLic)),
+          select(r,'lk',[['','語尾なし（点数など）'],['合格','資格 → 合格'],['取得','免許 → 取得']]), moveBtns(data.lic, i, buildLic)),
         h('div', {class:'cl'}, input(r,'t','免許・資格・検定の名称'))
       ));
     });
@@ -900,7 +900,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     for (let k = 0; k < LIC_ROWS; k++) {
       const r = lics[k] || {}; const ry = R.yh + k * pL;
       dateRow(ry, pL, BODY_PT, 9, '', R.x2 - 2.65, {y: r.y || '', m: r.m || ''});
-      const suf = r.lk === '検定' ? '合格' : (r.lk === '資格' ? '取得' : '');
+      const suf = r.lk === '合格' || r.lk === '取得' ? r.lk : '';
       const sw = suf ? suf.length * BODY_MM + 2 : 0;
       const rx = R.x4 - 2.55;
       if (r.t) T(R.x2 + 2.5, ry, rx - sw - R.x2 - 2.5, pL, esc(r.t), 'fit', fs(BODY_PT) + `" data-lbl="免許・資格の${k + 1}行目`);
