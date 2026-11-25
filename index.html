@@ -770,7 +770,9 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     // ふりがな欄：文字のまわりの余白を、上下左右ともそろえる（上下の余白は約1mm＝左右も同じ）
     const FM = 1.0;
     const LX = L.x1 + 0.95;   // 基本情報欄の文字の左端（ふりがな・氏名・住所・メールすべて共通）
-    const furi = (ya, yb, xr, txt) => T(L.x1, ya + 0.1, xr - L.x1, yb - ya, esc(txt), 'c', fs(8.5));   // ふりがなは欄の中央
+    const furi = (ya, yb, xr, txt, left) => left
+      ? T(LX, ya + 0.1, xr - LX - 0.9, yb - ya, esc(txt), '', fs(8.5))           // 住所のふりがなは左寄せ（住所の左端とそろえる）
+      : T(L.x1, ya + 0.1, xr - L.x1, yb - ya, esc(txt), 'c', fs(8.5));          // 氏名のふりがなは欄の中央
     lab(0, 'ふりがな', 8); lab(1, '氏　名', 9.6); lab(2, '生年月日', 9.6); lab(3, 'ふりがな', 8);
     lab(4, '現住所', 9.6); lab(5, 'E-mailアドレス', 5.6); lab(6, 'ふりがな', 8); lab(7, '連絡先', 9.6);
 
@@ -781,7 +783,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     dateRow(by, bh, 10, 10, '日生', 97.9, {y: b ? b.y : '', m: b ? b.mo : '', d: b ? b.d : ''});
     T(106.3, by, 6.5, bh, '(満', '', fs(10)); T(111.2, by, 9.2, bh, b ? age(d.birth) : '', 'c', fs(10)); T(119.9, by, 5, bh, '歳)', '', fs(10));   // 年齢は「(満」と「歳)」のあいだの中央
 
-    furi(Y[3], Y[4], L.x3, d.addrFurigana);
+    furi(Y[3], Y[4], L.x3, d.addrFurigana, true);
     const zipRow = (yTop, zip) => {   // 〒(　　-　　)
       T(LX, yTop + 0.7, 6, 3.8, '〒(', '', fs(9));
       T(LX + 4.8, yTop + 0.7, 25.3, 3.8, esc(zip), 'c', fs(9));   // 「〒(」と「)」のあいだの中央
@@ -793,7 +795,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     addrBox(Y[4], Y[5], d.addr, '現住所');
     T(LX, Y[5], L.x3 - LX - 1.5, Y[6] - Y[5], esc(d.email), '', fs(9.5));
 
-    furi(Y[6], Y[7], L.x3, d.same ? '' : d.cFurigana);
+    furi(Y[6], Y[7], L.x3, d.same ? '' : d.cFurigana, true);
     if (d.same) {
       T(L.x1, Y[7], L.x3 - L.x1, Y[8] - Y[7], '同　上', 'c', fs(12));
     } else {
