@@ -154,11 +154,11 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     </details>
 
     <details class="sec" open><summary>現住所</summary>
-      <label for="f_zip">郵便番号</label><input type="text" id="f_zip" inputmode="numeric" placeholder="460-0001" autocomplete="off">
+      <label for="f_zip">郵便番号</label><input type="text" id="f_zip" inputmode="numeric" autocomplete="off">
       <label for="f_addr">住所</label><input type="text" id="f_addr" autocomplete="off">
       <label for="f_addrFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_addrFurigana" autocomplete="off">
-      <label for="f_tel">電話</label><input type="tel" id="f_tel" autocomplete="off">
-      <label for="f_mobile">携帯</label><input type="tel" id="f_mobile" autocomplete="off">
+      <label for="f_tel">電話</label><input type="tel" id="f_tel" inputmode="numeric" autocomplete="off">
+      <label for="f_mobile">携帯</label><input type="tel" id="f_mobile" inputmode="numeric" autocomplete="off">
       <label for="f_email">E-mailアドレス</label><input type="email" id="f_email" autocomplete="off">
     </details>
 
@@ -167,8 +167,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <label for="f_cZip">郵便番号</label><input type="text" id="f_cZip" inputmode="numeric" autocomplete="off">
       <label for="f_cAddr">住所</label><input type="text" id="f_cAddr" autocomplete="off">
       <label for="f_cFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_cFurigana" autocomplete="off">
-      <label for="f_cTel">電話</label><input type="tel" id="f_cTel" autocomplete="off">
-      <label for="f_cMobile">携帯</label><input type="tel" id="f_cMobile" autocomplete="off">
+      <label for="f_cTel">電話</label><input type="tel" id="f_cTel" inputmode="numeric" autocomplete="off">
+      <label for="f_cMobile">携帯</label><input type="tel" id="f_cMobile" inputmode="numeric" autocomplete="off">
     </details>
 
     <details class="sec" open><summary>学歴・職歴</summary>
@@ -298,9 +298,39 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   // ---- フォーム ----
   const simple = ['date','furigana','name','birth','addrFurigana','zip','addr','tel','mobile','email',
                   'cFurigana','cZip','cAddr','cTel','cMobile','hobby','skill','motive','remarks'];
+  // ---- 入力の自動整形：全角数字→半角、郵便番号・電話番号は数字だけにしてハイフンを自動で入れる ----
+  const half = s => s.replace(/[０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+  const digits = s => half(s).replace(/\D/g, '');
+  const fmtZip = s => { const d = digits(s).slice(0, 7); return d.length > 3 ? d.slice(0, 3) + '-' + d.slice(3) : d; };
+  const fmtTel = s => {
+    const d = digits(s).slice(0, 11);
+    let cut;                                                   // ハイフンの位置
+    if (/^0[5789]0/.test(d)) cut = [3, 7];                     // 携帯・IP電話 090-1234-5678
+    else if (/^0(120|800)/.test(d)) cut = [4, 7];              // 0120-123-456
+    else if (/^0[36]/.test(d)) cut = [2, 6];                   // 03-1234-5678
+    else cut = [3, 6];                                         // 052-123-4567 など
+    const parts = []; let prev = 0;
+    cut.forEach(c => { if (d.length > c) { parts.push(d.slice(prev, c)); prev = c; } });
+    parts.push(d.slice(prev));
+    return parts.join('-');
+  };
+  const halfNum = s => half(s).replace(/(\d)[－ー−‐-]/g, '$1-');        // 住所：全角数字→半角（数字につづくハイフンも半角に）
+  const FMT = {zip:fmtZip, cZip:fmtZip, tel:fmtTel, mobile:fmtTel, cTel:fmtTel, cMobile:fmtTel, addr:halfNum, cAddr:halfNum};
+  // 整形したあとも、カーソルが「同じ数字の後ろ」に残るようにする
+  function applyFmt(el, fn) {
+    const before = el.value.slice(0, el.selectionStart ?? el.value.length);
+    const n = digits(before).length, atEnd = (el.selectionStart ?? el.value.length) >= el.value.length;
+    const v = fn(el.value);
+    if (v === el.value) return;
+    el.value = v;
+    if (atEnd || el !== document.activeElement) return;
+    let pos = 0, seen = 0;
+    while (pos < v.length && seen < n) { if (/\d/.test(v[pos])) seen++; pos++; }
+    try { el.setSelectionRange(pos, pos); } catch (e) {}
+  }
   simple.forEach(k => {
     const el = $('f_' + k);
-    el.addEventListener('input', () => { data[k] = el.value; save(); render(); });
+    el.addEventListener('input', () => { if (FMT[k]) applyFmt(el, FMT[k]); data[k] = el.value; save(); render(); });
   });
   $('f_same').addEventListener('change', e => { data.same = e.target.checked; syncSame(); save(); render(); });
   function syncSame() { ['cFurigana','cZip','cAddr'].forEach(k => $('f_' + k).disabled = data.same); }
@@ -321,7 +351,9 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   const input = (obj, key, ph, cls, mode) => {
     const e = h('input', {type:'text', placeholder:ph, value:obj[key] || '', autocomplete:'off', className:cls || ''});
     if (mode) e.inputMode = mode;
-    e.addEventListener('input', () => { obj[key] = e.value; save(); render(); });
+    e.addEventListener('input', () => {
+      if (mode === 'numeric') { const v = digits(e.value); if (v !== e.value) e.value = v; }   // 年・月は半角数字だけ
+      obj[key] = e.value; save(); render(); });
     return e;
   };
   const select = (obj, key, opts, cls) => {
