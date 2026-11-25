@@ -42,27 +42,27 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .preview { padding:24px; overflow:auto; }
 .preview-inner { display:flex; flex-direction:column; align-items:center; gap:20px; }
 
-/* ===== 履歴書本体（A4×2ページ。名古屋ビジネス・アカデミー様式に合わせた寸法 / 単位mm） ===== */
-.page { width:210mm; height:297mm; background:#fff; position:relative; overflow:hidden; font-size:10.5pt; color:#000;
+/* ===== 履歴書本体（B4横の見開き＝182×257mmを2ページ。名古屋ビジネス・アカデミー様式をB4用に設計 / 単位mm） ===== */
+.page { width:182mm; height:257mm; background:#fff; position:relative; overflow:hidden; font-size:10pt; color:#000;
   box-shadow:0 2px 12px rgba(0,0,0,.18); -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-.page .content { position:absolute; width:167mm; }
-.p1 .content { left:26mm; top:20mm; }
-.p2 .content { left:22mm; top:21mm; }
+.page .content { position:absolute; width:144.62mm; }
+.p1 .content { left:22.52mm; top:17.32mm; }
+.p2 .content { left:19.05mm; top:18.19mm; }
 .n { display:inline-block; text-align:center; }
-.lbl { font-size:8.5pt; letter-spacing:.08em; justify-content:center; text-align:center; }
+.lbl { font-size:8.1pt; letter-spacing:.08em; justify-content:center; text-align:center; }
 
 /* 1ページ目：ヘッダ */
-.head { position:relative; height:18mm; }
-.head h2 { margin:0; font-size:20pt; font-weight:500; letter-spacing:1.2em; line-height:1; padding-top:3mm; }
-.head .date { position:absolute; left:0; width:118mm; top:11mm; text-align:right; font-size:9.5pt; }
-.photo-box { position:absolute; left:124mm; top:2mm; width:34mm; height:46mm; border:.2mm solid #666;
-  display:flex; align-items:center; justify-content:center; text-align:center; font-size:8.5pt; line-height:1.9; color:#333; z-index:2; background:#fff; }
+.head { position:relative; height:15.59mm; }
+.head h2 { margin:0; font-size:19pt; font-weight:500; letter-spacing:1.2em; line-height:1; padding-top:2.6mm; }
+.head .date { position:absolute; left:0; width:102.19mm; top:9.53mm; text-align:right; font-size:9pt; }
+.photo-box { position:absolute; left:106mm; top:-1.5mm; width:34mm; height:46mm; border:.2mm solid #666;
+  display:flex; align-items:center; justify-content:center; text-align:center; font-size:8.1pt; line-height:1.9; color:#333; z-index:2; background:#fff; }
 .photo-box .img { width:30mm; height:40mm; background:center/cover no-repeat; }
 
 /* 基本情報ボックス */
-.A { display:grid; grid-template-columns:19mm 100mm 6mm 41mm;
-  grid-template-rows:5.5mm 17.5mm 11.4mm 5.5mm 10.5mm 6.7mm 8.2mm 6.1mm 5.2mm 11.1mm; width:166mm; }
-.A > div { border-right:.2mm solid #000; border-bottom:.2mm solid #000; padding:0 1.5mm; display:flex; align-items:center; overflow:hidden; min-width:0; }
+.A { display:grid; grid-template-columns:16.45mm 86.6mm 5.2mm 35.51mm;
+  grid-template-rows:4.76mm 15.15mm 9.87mm 4.76mm 9.09mm 5.8mm 7.1mm 5.28mm 4.5mm 9.61mm; width:143.76mm; }
+.A > div { border-right:.2mm solid #000; border-bottom:.2mm solid #000; padding:0 1.3mm; display:flex; align-items:center; overflow:hidden; min-width:0; }
 .A .dot { border-bottom:.2mm dotted #444; }
 .A .et { border-top:.5mm solid #000; }
 .A .el { border-left:.5mm solid #000; }
@@ -70,51 +70,51 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .A .eb { border-bottom:.5mm solid #000; }
 .A .sp { border:none; border-bottom:.5mm solid #000; padding:0; }
 .A .blk { display:block; padding-top:.8mm; }
-.A .small { font-size:6.5pt; color:#333; line-height:1; margin-bottom:.4mm; }
-.A .furi { font-size:8.5pt; }
-.A .name { font-size:18pt; }
-.A .zip { font-size:9pt; height:4.6mm; display:flex; align-items:center; gap:2mm; white-space:nowrap; }
-.A .zip .zn { display:inline-block; min-width:21mm; text-align:center; }
-.A .zip .hint { font-size:6pt; color:#444; margin-left:3mm; }
-.A .addr { font-size:10pt; line-height:1.3; }
-.A .birth { font-size:10pt; white-space:nowrap; padding-left:12mm; }
-.A .tv { font-size:9.5pt; }
+.A .small { font-size:6.2pt; color:#333; line-height:1; margin-bottom:.4mm; }
+.A .furi { font-size:8.1pt; }
+.A .name { font-size:17.1pt; }
+.A .zip { font-size:8.5pt; height:3.98mm; display:flex; align-items:center; gap:1.73mm; white-space:nowrap; }
+.A .zip .zn { display:inline-block; min-width:18.19mm; text-align:center; }
+.A .zip .hint { font-size:5.7pt; color:#444; margin-left:2.6mm; }
+.A .addr { font-size:9.5pt; line-height:1.3; }
+.A .birth { font-size:9.5pt; white-space:nowrap; padding-left:10.39mm; }
+.A .tv { font-size:9pt; }
 
 /* 学歴・職歴ボックス */
-.B { display:grid; grid-template-columns:19mm 1fr; border:.5mm solid #000; height:147mm; margin-top:4.5mm; width:166mm; }
-.vl { display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; text-orientation:upright; letter-spacing:.75em; font-size:9pt; padding-top:.75em; }
+.B { display:grid; grid-template-columns:16.45mm 1fr; border:.5mm solid #000; height:127.3mm; margin-top:3.9mm; width:143.76mm; }
+.vl { display:flex; align-items:center; justify-content:center; writing-mode:vertical-rl; text-orientation:upright; letter-spacing:.75em; font-size:8.5pt; padding-top:.75em; }
 .B > .vl { border-right:.2mm solid #000; }
 .rows { display:flex; flex-direction:column; min-width:0; }
-.hr { flex:1; display:grid; grid-template-columns:34mm 1fr; border-bottom:.2mm dotted #555; min-height:0; }
+.hr { flex:1; display:grid; grid-template-columns:29.44mm 1fr; border-bottom:.2mm dotted #555; min-height:0; }
 .hr:last-child { border-bottom:none; }
-.lic .hr { grid-template-columns:36mm 1fr; }
-.ym { display:grid; grid-template-columns:44% 18% 23.5% 14.5%; align-items:center; border-right:.2mm solid #000; font-size:9.5pt; }
-.ym .y, .ym .m { text-align:right; font-size:10.5pt; padding-right:.6mm; }
-.hr .tx { display:flex; align-items:center; padding:0 2.5mm; font-size:10.5pt; min-width:0; overflow:hidden; white-space:nowrap; }
+.lic .hr { grid-template-columns:31.18mm 1fr; }
+.ym { display:grid; grid-template-columns:44% 18% 23.5% 14.5%; align-items:center; border-right:.2mm solid #000; font-size:9pt; }
+.ym .y, .ym .m { text-align:right; font-size:10pt; padding-right:.6mm; }
+.hr .tx { display:flex; align-items:center; padding:0 2.17mm; font-size:10pt; min-width:0; overflow:hidden; white-space:nowrap; }
 .hr .tx.ctr { justify-content:center; letter-spacing:.6em; }
 .hr .tx.rgt { justify-content:flex-end; }
 
 /* 2ページ目 */
-.C { border:.5mm solid #000; height:254.5mm; width:166mm; display:flex; flex-direction:column; }
-.sec { display:grid; grid-template-columns:18mm 1fr; border-top:.3mm solid #000; min-height:0; }
+.C { border:.5mm solid #000; height:220.4mm; width:143.76mm; display:flex; flex-direction:column; }
+.sec { display:grid; grid-template-columns:15.59mm 1fr; border-top:.3mm solid #000; min-height:0; }
 .sec:first-child { border-top:none; }
 .sec > .vl { border-right:.2mm solid #000; }
-.s1 { height:69mm; } .s2 { height:73.5mm; } .s3 { height:83mm; } .s4 { flex:1; }
-.s1 .rows .hd { height:5.5mm; display:grid; grid-template-columns:36mm 1fr; border-bottom:.2mm solid #000; font-size:8.5pt; letter-spacing:.3em; }
+.s1 { height:59.75mm; } .s2 { height:63.65mm; } .s3 { height:71.88mm; } .s4 { flex:1; }
+.s1 .rows .hd { height:4.76mm; display:grid; grid-template-columns:31.18mm 1fr; border-bottom:.2mm solid #000; font-size:8.1pt; letter-spacing:.3em; }
 .s1 .hd div { display:flex; align-items:center; justify-content:center; }
 .s1 .hd div:first-child { border-right:.2mm solid #000; }
 .cols { display:grid; grid-template-columns:1fr 1fr; min-width:0; }
 .cols > div { min-width:0; }
 .cols > div + div { border-left:.2mm solid #000; }
-.colhd { height:9.2mm; line-height:9.2mm; font-size:8.5pt; padding:0 2mm; border-bottom:.2mm dotted #555; white-space:nowrap; }
-.ruled { position:relative; overflow:hidden; font-size:10.5pt; }
+.colhd { height:7.97mm; line-height:7.97mm; font-size:8.1pt; padding:0 1.73mm; border-bottom:.2mm dotted #555; white-space:nowrap; }
+.ruled { position:relative; overflow:hidden; font-size:10pt; }
 .ruled .rl { position:absolute; left:0; right:0; top:0; bottom:0; display:flex; flex-direction:column; }
-.ruled .rl i { display:block; flex:none; height:9.2mm; border-bottom:.2mm dotted #555; }
+.ruled .rl i { display:block; flex:none; height:7.97mm; border-bottom:.2mm dotted #555; }
 .ruled .rl i:last-child { border-bottom:none; }
-.ruled .rt { position:relative; line-height:9.2mm; padding:0 2mm; white-space:pre-wrap; overflow-wrap:anywhere; }
-.s2 .ruled { height:64.3mm; }
+.ruled .rt { position:relative; line-height:7.97mm; padding:0 1.73mm; white-space:pre-wrap; overflow-wrap:anywhere; }
+.s2 .ruled { height:55.68mm; }
 .s3 .ruled { height:100%; }
-.plain { padding:2mm 2.5mm; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; line-height:1.6; font-size:10.5pt; height:100%; }
+.plain { padding:1.73mm 2.17mm; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; line-height:1.6; font-size:10pt; height:100%; }
 
 @media (max-width:1100px) {
   .app { grid-template-columns:1fr; }
@@ -123,7 +123,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   .page { zoom:.5; }
 }
 .spread { display:flex; flex-direction:column; align-items:center; gap:20px; }
-/* 印刷：B4(257×364mm)横に、A4縦2ページを見開きで1枚にまとめる（420×297mm → 86%に縮小） */
+/* 印刷：B4横(364×257mm)1枚。各ページはB4の半分(182×257mm)で設計済みなので、縮小せず見開きに並べる */
 @media print {
   @page { size:364mm 257mm; margin:0; }
   html, body { background:#fff; width:364mm; height:257mm; overflow:hidden; }
@@ -131,7 +131,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   .app { display:block; }
   .preview { padding:0; overflow:visible; }
   .preview-inner { display:block; gap:0; }
-  .spread { display:flex; flex-direction:row; align-items:flex-start; gap:0; width:420mm; height:297mm; zoom:.86; margin:.9mm 0 0 1.6mm; }
+  .spread { display:flex; flex-direction:row; align-items:flex-start; gap:0; width:364mm; height:257mm; margin:0; }
   .page { box-shadow:none; margin:0; zoom:1 !important; flex:none; }
 }
 </style>
@@ -359,7 +359,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   // ---- プレビュー描画 ----
   const ymd = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? {y:+m[1], mo:+m[2], d:+m[3]} : null; };
   const age = b => { const d = new Date(), x = ymd(b); if (!x) return ''; let a = d.getFullYear() - x.y; if (d.getMonth()+1 < x.mo || (d.getMonth()+1 === x.mo && d.getDate() < x.d)) a--; return a; };
-  const n = (v, w) => `<span class="n" style="min-width:${w}mm">${esc(v)}</span>`;
+  const n = (v, w) => `<span class="n" style="min-width:${(w*0.866).toFixed(1)}mm">${esc(v)}</span>`;
 
   function rowsHtml(list, N) {
     const rows = list.filter(r => r.y || r.m || r.t);
@@ -408,8 +408,8 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     <div class="dot furi" style="grid-area:4/2/5/4">${esc(d.addrFurigana)}</div>
     <div class="lbl el" style="grid-area:5/1/7/2">現住所</div>
     <div class="blk" style="grid-area:5/2/7/4"><div class="zip">〒(<span class="zn">${esc(d.zip)}</span>)</div><div class="addr">${esc(d.addr)}</div></div>
-    <div class="lbl el" style="grid-area:7/1/8/2;font-size:6.3pt;letter-spacing:0;white-space:nowrap;padding:0">E-mailアドレス</div>
-    <div style="grid-area:7/2/8/4;font-size:10pt">${esc(d.email)}</div>
+    <div class="lbl el" style="grid-area:7/1/8/2;font-size:6pt;letter-spacing:0;white-space:nowrap;padding:0">E-mailアドレス</div>
+    <div style="grid-area:7/2/8/4;font-size:9.5pt">${esc(d.email)}</div>
     <div class="lbl el dot" style="grid-area:8/1/9/2">ふりがな</div>
     <div class="dot furi" style="grid-area:8/2/9/4">${esc(d.cFurigana)}</div>
     <div class="lbl el eb" style="grid-area:9/1/11/2">連絡先</div>
