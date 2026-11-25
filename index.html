@@ -141,7 +141,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <div class="note" id="pdfInfo">B4横1枚のPDFを、この端末の中だけで作り、ダウンロードフォルダに保存します。</div>
     </div>
     <h1>履歴書メーカー</h1>
-    <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用の端末では使用後に「データを消去」を押してください。</div>
+    <div class="privacy">🔒 入力内容はこの端末のブラウザ内にだけ保存されます。サーバーには一切送信されません（通信自体をブロックしています）。共用の端末では使用後に「消去」を押してください。</div>
     <div class="msgs"><div class="note warn" id="warnNote"></div></div>
 
     <details class="sec" open><summary>基本情報</summary>
@@ -199,15 +199,14 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <textarea id="f_remarks" rows="3"></textarea><div class="note" id="cnt_remarks"></div>
     </details>
 
-    <details class="sec"><summary>その他（印刷・バックアップ・消去）</summary>
-      <div class="btns"><button id="btnPrint">印刷画面を開く（パソコン向け）</button></div>
-      <div class="note">印刷画面を使う場合は、送信先を「PDFに保存」、余白を「なし」、倍率を「100%」にしてください。</div>
+    <details class="sec"><summary>データ保存</summary>
       <div class="btns">
-        <button id="btnExport">バックアップ保存(JSON)</button>
-        <button id="btnImport">バックアップ読込</button>
-        <button id="btnClear" class="danger">データを消去</button>
+        <button id="btnExport">保存</button>
+        <button id="btnImport">読み込み</button>
+        <button id="btnClear" class="danger">消去</button>
         <input type="file" id="fileImport" accept="application/json" hidden>
       </div>
+      <div class="note">「保存」で入力内容をファイルに書き出し、「読み込み」でそのファイルから元に戻せます。「消去」はこの端末の入力内容をすべて消します。</div>
     </details>
   </aside>
 
@@ -583,8 +582,6 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     if (!confirm('この端末に保存された入力内容をすべて消去します。よろしいですか？')) return;
     localStorage.removeItem(KEY); data = blank(); fillForm(); render();
   });
-  // フォントの読み込みが終わってから印刷（読み込み前だと代替フォントで出力されるため）
-  $('btnPrint').addEventListener('click', () => { document.fonts.ready.then(() => { render(); if (!$('btnPrint').disabled) window.print(); }); });
   document.fonts.ready.then(render);
   window.addEventListener('resize', fitPreview);
   // スマホ：入力／プレビューの切り替え
@@ -713,7 +710,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
         res.append(sb);
       }
     } catch (e) {
-      res.textContent = 'PDFを作成できませんでした。お使いのブラウザでは「印刷画面を開く」から保存してください。';
+      res.textContent = 'PDFを作成できませんでした。お使いのブラウザでは対応していない可能性があります。';
     } finally { check_buttons(); }
   });
   function check_buttons() { /* check()が最後に状態を反映する */ render(); }
@@ -960,7 +957,6 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     });
     $('errNote').innerHTML = errs.map(e => `<div>⚠ ${esc(e)}</div>`).join('');
     $('warnNote').innerHTML = warns.map(e => `<div>・${esc(e)}</div>`).join('');
-    $('btnPrint').disabled = errs.length > 0;
     const pb = $('btnPdf');
     pb.disabled = errs.length > 0;
     pb.textContent = errs.length ? 'エラーを直すとPDFを作成できます' : 'PDFを作成して保存';
