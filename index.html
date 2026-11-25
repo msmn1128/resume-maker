@@ -773,7 +773,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     ln(L.x3, L.t1, L.x4, L.t1, .2, true);
     ln(L.x3, L.t2, L.x4, L.t2, .2, true);
     // 写真枠（30×40mm）
-    sv.push(`<rect x="${G.photo.x}" y="${G.photo.y}" width="${G.photo.w}" height="${G.photo.h}" fill="none" stroke="#555" stroke-width=".2"/>`);
+    if (!d.photo)     sv.push(`<rect x="${G.photo.x}" y="${G.photo.y}" width="${G.photo.w}" height="${G.photo.h}" fill="none" stroke="#555" stroke-width=".2"/>`);
     // 学歴・職歴ボックス
     sv.push(`<rect x="${L.x0}" y="${L.yB0}" width="${L.x4 - L.x0}" height="${L.yB1 - L.yB0}" fill="none" stroke="#000" stroke-width=".5"/>`);
     ln(L.x1, L.yB0, L.x1, L.yB1, .25);
@@ -846,7 +846,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
     // 写真
     const ph = G.photo;
-    // 写真は枠の90%の大きさで中央に入れる（枠線が見えて、はみ出して見えないように）
+    // 写真は枠の90%の大きさで中央に入れる（写真があるときは枠線を描かない）
     const PH = 0.9;
     if (d.photo) T(ph.x + ph.w * (1 - PH) / 2, ph.y + ph.h * (1 - PH) / 2, ph.w * PH, ph.h * PH, '', '', `background:url('${d.photo}') center/cover no-repeat;`);
     else T(ph.x, ph.y, ph.w, ph.h, '<div style="text-align:center;line-height:1.1;color:#333;">写真をはる位置<br><br>(30×40mm)<br><br><span style="font-size:6.2pt">○本人単身／胸から上</span></div>', 'c', fs(8.5));
