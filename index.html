@@ -33,11 +33,6 @@ button:hover:not(:disabled) { background:#f0f0f0; }
 button:disabled { opacity:.5; cursor:not-allowed; }
 button.primary { background:var(--accent); color:#fff; border-color:var(--accent); font-size:15px; padding:11px 14px; width:100%; font-weight:700; }
 button.primary:hover:not(:disabled) { background:#174a96; }
-#dlg { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:50; padding:16px; }
-#dlg .box { background:#fff; border-radius:12px; padding:16px; max-width:360px; width:100%; box-shadow:0 8px 30px rgba(0,0,0,.3); }
-#dlg p { margin:0 0 14px; font-size:14px; line-height:1.7; white-space:pre-line; }
-#dlg .row { display:flex; gap:8px; justify-content:flex-end; }
-#dlg button { padding:9px 16px; font-size:14px; }
 button.danger { color:#b3261e; border-color:#e6b8b4; }
 .btns { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
 .photo-row { display:flex; gap:10px; align-items:center; }
@@ -209,11 +204,9 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
         <button id="btnExport">保存</button>
         <button id="btnImport">読み込み</button>
         <button id="btnClear" class="danger">消去</button>
-        <button id="btnClearStore" class="danger">端末内の保存データを消去</button>
         <input type="file" id="fileImport" accept="application/json" hidden>
       </div>
-      <div class="note" id="storeMsg"></div>
-      <div class="note">「保存」で入力内容をファイルに書き出し、「読み込み」でそのファイルから元に戻せます。「消去」は入力内容をすべて消します。「端末内の保存データを消去」は、画面の入力はそのままで、このブラウザに自動保存されているデータだけを消します。</div>
+      <div class="note">「保存」で入力内容をファイルに書き出し、「読み込み」でそのファイルから元に戻せます。「消去」はこの端末の入力内容をすべて消します。</div>
     </details>
   </aside>
 
@@ -585,22 +578,9 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     };
     r.readAsText(f); e.target.value = '';
   });
-  // 確認の選択肢（削除する／やめる）を出す
-  function askDelete(msg) {
-    return new Promise(res => {
-      const mk = (label, cls, v) => { const b = h('button', {textContent:label, className:cls}); b.addEventListener('click', () => { d.remove(); res(v); }); return b; };
-      const d = h('div', {id:'dlg'}, h('div', {class:'box'}, h('p', {textContent:msg}), h('div', {class:'row'}, mk('やめる', '', false), mk('削除する', 'danger', true))));
-      document.body.append(d);
-    });
-  }
-  $('btnClear').addEventListener('click', async () => {
-    if (!await askDelete('入力内容をすべて消去します。削除していいですか？')) return;
-    clearTimeout(timer); localStorage.removeItem(KEY); data = blank(); fillForm(); autoYears(); render();
-  });
-  $('btnClearStore').addEventListener('click', async () => {
-    if (!await askDelete('この端末（ブラウザ）に自動保存されたデータを削除します。画面の入力はそのまま残ります。削除していいですか？')) return;
-    clearTimeout(timer); localStorage.removeItem(KEY);
-    $('storeMsg').textContent = '端末内の保存データを削除しました。続けて入力すると、また自動で保存されます。';
+  $('btnClear').addEventListener('click', () => {
+    if (!confirm('この端末に保存された入力内容をすべて消去します。よろしいですか？')) return;
+    localStorage.removeItem(KEY); data = blank(); fillForm(); render();
   });
   document.fonts.ready.then(render);
   window.addEventListener('resize', fitPreview);
