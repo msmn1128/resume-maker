@@ -181,7 +181,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
         <button data-add="学歴" id="btnAddGaku" hidden>＋「学歴」の見出し</button>
         <button data-add="職歴">＋「職歴」の見出し</button>
       </div>
-      <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（年・月は数字のみ。使わない行は空のままで大丈夫です）。最後の行には「以上」が自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
+      <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（年・月は数字のみ。使わない行は空のままで大丈夫です）。「以上」は最後に入力した行の次の行に自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
     </details>
 
     <details class="sec" open><summary>免許・資格等（最大7行）</summary>
@@ -271,7 +271,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       if (r.kind) return Object.assign(blankRow(), r);
       if (!r.y && !r.m && ['学歴','職歴','以上'].includes(r.t)) return {kind:'head', t:r.t};
       return Object.assign(blankRow(), {y:r.y||'', m:r.m||'', t:r.t||''});
-    }).filter(r => !(r.kind === 'head' && r.t === '以上'));   // 「以上」は最終行に自動で入る
+    }).filter(r => !(r.kind === 'head' && r.t === '以上'));   // 「以上」は入力した最後の行の次に自動で入る
     d.hist.forEach((r, i) => {
       if (r.kind !== 'row') return;
       if (!r.id) r.id = uid();
@@ -840,9 +840,9 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       subs.forEach((s, i) => lines.push({text:s, indent:i + 1}));
       lines[lines.length - 1].ev = r.ev;   // 入学・卒業などは、その学校の最後の行に入れる
     });
-    const histOver = lines.length - (HIST_ROWS - 1);   // 最終行は「以上」用
+    const histOver = lines.length - (HIST_ROWS - 1);   // 「以上」の1行分をあけておく
     for (let k = 0; k < HIST_ROWS; k++) {
-      const ln_ = k === HIST_ROWS - 1 ? {head:'以上'} : (lines[k] || {});
+      const ln_ = (k === lines.length && lines.length > 0) ? {head:'以上'} : (lines[k] || {});   // 「以上」は、入力した最後の行の次の行に入る
       const ry = L.yB0 + k * pB;
       // 年・月の目盛りは全行に入れる
       dateRow(ry, pB, BODY_PT, 9, '', 66.0, {y: ln_.y || '', m: ln_.m || ''});
@@ -898,7 +898,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
   function check({histOver, licOver}) {
     const errs = [], warns = [];
-    if (histOver > 0) errs.push(`学歴・職歴が${HIST_ROWS - 1}行を超えています（最後の行は「以上」用です。あと${histOver}行減らしてください。学科・コースも行を使います）`);
+    if (histOver > 0) errs.push(`学歴・職歴が${HIST_ROWS - 1}行を超えています（「以上」が最後の入力行の次の行に入るため、最大13行までです。あと${histOver}行減らしてください。学科・コースも行を使います）`);
     if (licOver > 0) errs.push(`免許・資格が${LIC_ROWS}行を超えています（あと${licOver}行減らしてください）`);
     Object.entries(NUMF).forEach(([k, label]) => { if (!okNum(data[k] || '')) errs.push(`${label}は数字のみ入力してください`); });
     if ([...data.hist, ...data.lic].some(r => r.kind !== 'head' && (!okDigits(r.y || '') || !okDigits(r.m || '')))) errs.push('年・月は数字のみ入力してください');
