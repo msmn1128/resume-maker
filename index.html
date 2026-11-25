@@ -110,6 +110,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   .cl input, .cl select { font-size:16px; padding:10px 8px; }
   button { min-height:44px; font-size:14px; }
   button.primary { font-size:16px; min-height:50px; }
+  .cl { flex-wrap:wrap; }
+  .cl select { flex:1 1 130px; }
   .cl .w56 { width:72px; } .cl .w44 { width:60px; }
   .cl button { padding:4px 11px; }
   label { font-size:13px; margin-top:12px; }
@@ -173,6 +175,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       <div id="histList"></div>
       <div class="btns">
         <button data-add="row">＋行を追加</button>
+        <button data-add="学歴">＋「学歴」の見出し</button>
         <button data-add="職歴">＋「職歴」の見出し</button>
       </div>
       <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（使わない行は空のままで大丈夫です）。最後の行には「以上」が自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
@@ -235,16 +238,18 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   const COURSES = ['全日制','定時制','通信制'];
   const TEXT_RIGHT = 165.5;          // 入学・卒業・「以上」などの右端（全行で共通）
 
-  const blankRow = () => ({kind:'row', y:'', m:'', t:'', kt:'', dept:'', course:'', ev:'', pre:'', link:false});
-  // 最初から用意する学歴（link:true の行は、直前の「入学」の行の学校名・学科・コースを自動で使う）
-  const presetHist = () => [
-    {kind:'head', t:'学歴'},
-    Object.assign(blankRow(), {pre:'中学校', ev:'卒業'}),
-    Object.assign(blankRow(), {pre:'高校', ev:'入学'}),
-    Object.assign(blankRow(), {pre:'高校', ev:'卒業', link:true}),
-    Object.assign(blankRow(), {pre:'専門学校', ev:'入学'}),
-    Object.assign(blankRow(), {pre:'専門学校', ev:'卒業見込', link:true})
-  ];
+  const uid = () => Math.random().toString(36).slice(2, 9);
+  const blankRow = () => ({kind:'row', y:'', m:'', t:'', kt:'', dept:'', course:'', ev:'', pre:'', link:'', id:uid()});
+  // 最初から用意する学歴（link に行のidが入っている行は、その行の学校名・学科・コースを自動で使う）
+  const presetHist = () => {
+    const hs = Object.assign(blankRow(), {pre:'高校', ev:'入学'}), col = Object.assign(blankRow(), {pre:'専門学校', ev:'入学'});
+    return [
+      {kind:'head', t:'学歴'},
+      Object.assign(blankRow(), {pre:'中学校', ev:'卒業'}),
+      hs, Object.assign(blankRow(), {pre:'高校', ev:'卒業', link:hs.id}),
+      col, Object.assign(blankRow(), {pre:'専門学校', ev:'卒業見込', link:col.id})
+    ];
+  };
   const blankLic = () => ({y:'', m:'', t:'', lk:''});
   const blank = () => ({
     date: new Date().toISOString().slice(0,10),
@@ -264,7 +269,13 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       if (!r.y && !r.m && ['学歴','職歴','以上'].includes(r.t)) return {kind:'head', t:r.t};
       return Object.assign(blankRow(), {y:r.y||'', m:r.m||'', t:r.t||''});
     }).filter(r => !(r.kind === 'head' && r.t === '以上'));   // 「以上」は最終行に自動で入る
-    const blankOnly = d.hist.length <= 1 && d.hist.every(r => r.kind === 'row' && !r.y && !r.m && !r.t && !r.ev);
+    d.hist.forEach((r, i) => {
+      if (r.kind !== 'row') return;
+      if (!r.id) r.id = uid();
+      if (r.link === true) { const p = d.hist[i - 1]; if (p && p.kind === 'row') { if (!p.id) p.id = uid(); r.link = p.id; } else r.link = ''; }
+      else if (!r.link) r.link = '';
+    });
+    const blankOnly = d.hist.length <= 1 && d.hist.every(r => r.kind === 'row' && !r.y && !r.m && !r.t && !r.kt && !r.dept && !r.course && !r.ev);
     if (!d.hist.length || blankOnly) d.hist = presetHist();
     d.lic = (d.lic || []).map(r => Object.assign(blankLic(), r));
     if (!d.lic.length) d.lic = [blankLic()];
@@ -338,6 +349,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
         return;
       }
       const kids = [];
+      const src = r.link ? data.hist.find(x => x.kind === 'row' && x.id === r.link && x !== r) : null;   // 学校の引き継ぎ元
       if (r.pre) kids.push(h('div', {class:'ct', textContent:r.pre + '　' + (r.link ? '卒業' : r.ev)}));
       const top = [input(r,'y','年','w56','numeric'), input(r,'m','月','w44','numeric')];
       if (r.link) top.push(select(r,'ev',GRAD));
@@ -345,7 +357,15 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       top.push(...moveBtns(data.hist, i, buildHist));
       kids.push(h('div', {class:'cl'}, top));
       if (r.link) {
-        kids.push(h('div', {class:'note', textContent:'学校名・学科は、すぐ上の「入学」の行と同じ内容が入ります'}));
+        const opts = [['', '（学校を自分で入力する）']];
+        data.hist.forEach(x => { if (x.kind === 'row' && x !== r && !x.link && x.id) opts.push([x.id, [x.pre, x.t, x.ev].filter(Boolean).join(' ')]); });
+        kids.push(h('label', {textContent:'学校・学科を引き継ぐ行'}), select(r,'link',opts), 
+          ...(src ? [] : [h('div', {class:'note err', textContent:'引き継ぎ元がありません。学校を選ぶか、自分で入力してください'})]));
+        const sel = kids[kids.length - (src ? 1 : 2)];
+        sel.addEventListener('change', buildHist);
+      }
+      if (r.link && src) {
+        kids.push(h('div', {class:'note', textContent:'学校名・学科・コースは、選んだ行と同じ内容が入ります'}));
       } else {
         kids.push(h('div', {class:'cl'}, input(r,'t', r.pre ? r.pre + '名' : '学校名・会社名')));
         if (!r.pre || r.pre === '高校') kids.push(h('div', {class:'cl'}, select(r,'kt',[['','課程なし'], ...COURSES.map(c => [c, c + '課程'])])));
@@ -687,13 +707,11 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const lines = [];
     d.hist.forEach((r, i) => {
       if (r.kind === 'head') { lines.push({head:r.t}); return; }
-      if (r.link) {   // 卒業の行は、すぐ上の行の学校・学科・コースを引き継ぐ
-        const p = d.hist[i - 1];
-        if (p && p.kind === 'row') r = Object.assign({}, r, {t:p.t, kt:p.kt, dept:p.dept, course:p.course});
-      }
+      const p = r.link ? d.hist.find(x => x.kind === 'row' && x.id === r.link && x !== r) : null;
+      if (p) r = Object.assign({}, r, {t:p.t, kt:p.kt, dept:p.dept, course:p.course});   // 卒業の行は、引き継ぎ元の学校・学科・コースを使う
       const first = (r.t || '') + (r.kt ? ' ' + r.kt + '課程' : '');
       const subs = [r.dept, r.course].filter(Boolean);
-      const empty = r.link ? (!r.y && !r.m) : (!r.y && !r.m && !first && !subs.length && !(r.ev && !r.pre));
+      const empty = p ? (!r.y && !r.m) : (!r.y && !r.m && !first && !subs.length && !(r.ev && !r.pre));
       if (empty) return;
       lines.push({y:r.y, m:r.m, text:first, indent:0});
       subs.forEach((s, i) => lines.push({text:s, indent:i + 1}));
