@@ -82,6 +82,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 .bar .pdfres:empty { display:none; }
 .tabs { display:none; }
 .card .ct { font-size:14px; font-weight:700; margin:2px 2px 6px; }
+.cl .yl { flex:none; width:3em; align-self:center; font-size:13px; }
 .card .cl.wrap { flex-wrap:wrap; }
 .card button.addbelow { width:100%; margin-top:6px; }
 
@@ -174,14 +175,9 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     </details>
 
     <details class="sec" open><summary>学歴・職歴</summary>
-      <div class="note" id="histEx"></div>
+      <div class="note" id="histEx" style="white-space:pre-line"></div>
       <div id="histList"></div>
-      <div class="btns">
-        <button data-add="row">＋行を追加</button>
-        <button data-add="学歴" id="btnAddGaku" hidden>＋「学歴」の見出し</button>
-        <button data-add="職歴">＋「職歴」の見出し</button>
-      </div>
-      <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（年・月は数字のみ。使わない行は空のままで大丈夫です）。「以上」は最後に入力した行の次の行に自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
+      <div class="note">「学歴」の見出しは自動で入り、「職歴」の見出しは職歴のチェックを入れたときだけ入ります（年・月は数字のみ）。「以上」は最後に入力した行の次の行に自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。</div>
     </details>
 
     <details class="sec" open><summary>免許・資格等（最大7行）</summary>
@@ -238,48 +234,87 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   const PT = 0.3528;                 // 1pt = 0.3528mm
   const BODY_PT = 10.5, BODY_MM = BODY_PT * PT;
   const EVENTS = ['入学','卒業','卒業見込','転入学','転学','退学','入社','退社'];
-  const COURSES = ['全日制','定時制','通信制'];
   const TEXT_RIGHT = 165.5;          // 入学・卒業・「以上」などの右端（全行で共通）
 
   const uid = () => Math.random().toString(36).slice(2, 9);
-  const blankRow = () => ({kind:'row', y:'', m:'', t:'', kt:'', dept:'', course:'', ev:'', pre:'', link:'', id:uid()});
-  // 最初から用意する学歴（link に行のidが入っている行は、その行の学校名・学科・コースを自動で使う）
-  const presetHist = () => {
-    const hs = Object.assign(blankRow(), {pre:'高校', ev:'入学'}), col = Object.assign(blankRow(), {pre:'専門学校', ev:'入学'});
-    return [
-      {kind:'head', t:'学歴'},
-      Object.assign(blankRow(), {pre:'中学校', ev:'卒業'}),
-      hs, Object.assign(blankRow(), {pre:'高校', ev:'卒業', link:hs.id}),
-      col, Object.assign(blankRow(), {pre:'専門学校', ev:'卒業見込', link:col.id})
-    ];
-  };
+  const blankSchool = () => ({t:'', dept:'', course:'', sy:'', sm:'', ey:'', em:'', trans:false, ty:'', tm:'', t2:'', dept2:'', course2:'', iy:'', im:'', _a:{}});
+  const blankEdu = () => ({jhs:{t:'', ey:'', em:'', _a:{}}, hs:blankSchool(), col:blankSchool()});
+  const blankWork = () => ({y:'', m:'', t:'', ev:''});
+  // 履歴書に載せる行を、3ブロックと職歴から組み立てる（見出し「学歴」は常に、「職歴」はチェックしたときだけ）
+  const nowYM = () => { const n = new Date(); return n.getFullYear() * 12 + n.getMonth() + 1; };
+  function histRows(d) {
+    const out = [{kind:'head', t:'学歴'}], e = d.edu, row = (y, m, t, ev, dept, course) => out.push({kind:'row', y, m, t, ev, dept: dept || '', course: course || ''});
+    if (e.jhs.t || e.jhs.ey || e.jhs.em) row(e.jhs.ey, e.jhs.em, e.jhs.t, '卒業');
+    [['hs', false], ['col', true]].forEach(([k, mikomi]) => {
+      const b = e[k];
+      if (b.sy || b.sm || b.t || b.dept || b.course) row(b.sy, b.sm, b.t, '入学', b.dept, b.course);
+      let name = b.t, dept = b.dept, course = b.course;
+      if (b.trans) {
+        if (b.ty || b.tm || b.t) row(b.ty, b.tm, b.t, '転学');
+        if (b.iy || b.im || b.t2 || b.dept2 || b.course2) row(b.iy, b.im, b.t2, '転入学', b.dept2, b.course2);
+        name = b.t2; dept = b.dept2; course = b.course2;
+      }
+      if (b.ey || b.em) {
+        const fut = mikomi && ((+b.ey || 0) * 12 + (+b.em || 0) >= nowYM());   // 専門学校は、卒業年月が今月以降なら「卒業見込」
+        row(b.ey, b.em, name, fut ? '卒業見込' : '卒業', dept, course);
+      }
+    });
+    if (d.work.on) { out.push({kind:'head', t:'職歴'}); d.work.rows.forEach(r => { if (r.y || r.m || r.t || r.ev) row(r.y, r.m, r.t, r.ev); }); }
+    return out;
+  }
+  // 旧形式（hist の行の並び）を、3ブロック＋職歴に振り分ける。振り分けられない行は職歴欄へ
+  function migrateHist(old) {
+    const edu = blankEdu(), work = {on:false, rows:[]}; let cur = null, inWork = false;
+    const toWork = r => { work.on = true; work.rows.push(Object.assign(blankWork(), {y:r.y||'', m:r.m||'', t:r.t||'', ev:r.ev||''})); };
+    (old || []).forEach(r => {
+      if (r.kind === 'head') { if (r.t === '職歴') { inWork = true; work.on = true; } return; }
+      if (!(r.y || r.m || r.t || r.dept || r.course)) { if (r.pre) cur = r.pre === '高校' ? edu.hs : r.pre === '専門学校' ? edu.col : cur; return; }
+      if (inWork) { toWork(r); return; }
+      const src = r.link ? old.find(x => x.id === r.link && x !== r) : null, g = src || r;
+      if (r.pre === '中学校') { Object.assign(edu.jhs, {t:r.t||'', ey:r.y||'', em:r.m||''}); cur = null; return; }
+      if (r.pre === '高校' || r.pre === '専門学校') {
+        const b = cur = r.pre === '高校' ? edu.hs : edu.col;
+        if (r.link) { b.ey = r.y || ''; b.em = r.m || ''; if (!b.t) { b.t = g.t || ''; b.dept = g.dept || ''; b.course = g.course || ''; } }
+        else { Object.assign(b, {t:r.t||'', dept:r.dept||'', course:r.course||'', sy:r.y||'', sm:r.m||''}); }
+        return;
+      }
+      if (cur && r.ev === '転学') { cur.trans = true; cur.ty = r.y || ''; cur.tm = r.m || ''; return; }
+      if (cur && r.ev === '転入学') { cur.trans = true; Object.assign(cur, {iy:r.y||'', im:r.m||'', t2:r.t||'', dept2:r.dept||'', course2:r.course||''}); return; }
+      if (cur && cur.trans && (r.ev === '卒業' || r.ev === '卒業見込')) { cur.ey = r.y || ''; cur.em = r.m || ''; if (!cur.t2) { cur.t2 = r.t || ''; cur.dept2 = r.dept || ''; cur.course2 = r.course || ''; } return; }
+      toWork(r);
+    });
+    return {edu, work};
+  }
   const blankLic = () => ({y:'', m:'', t:'', lk:''});
   const blank = () => ({
     date: new Date().toISOString().slice(0,10),
     furigana:'', name:'', birth:'', photo:'',
     addrFurigana:'', zip:'', addr:'', tel:'', mobile:'', email:'',
     same:false, cFurigana:'', cZip:'', cAddr:'', cTel:'', cMobile:'',
-    hist:presetHist(), lic:[blankLic()],
+    edu:blankEdu(), work:{on:false, rows:[]}, lic:[blankLic()],
     hobby:'', skill:'', motive:'', remarks:''
   });
 
   function normalize(d) {
+    const legacy = !d.edu && Array.isArray(d.hist);   // 旧形式（hist の行の並び）かどうか
+    const oldHist = d.hist;
     d = Object.assign(blank(), d);
     if (d.wish && !d.remarks) d.remarks = d.wish;
-    d.hist = (d.hist || []).map(r => {
-      if (r.kind === 'head') return r;
-      if (r.kind) return Object.assign(blankRow(), r);
-      if (!r.y && !r.m && ['学歴','職歴','以上'].includes(r.t)) return {kind:'head', t:r.t};
-      return Object.assign(blankRow(), {y:r.y||'', m:r.m||'', t:r.t||''});
-    }).filter(r => !(r.kind === 'head' && r.t === '以上'));   // 「以上」は入力した最後の行の次に自動で入る
-    d.hist.forEach((r, i) => {
-      if (r.kind !== 'row') return;
-      if (!r.id) r.id = uid();
-      if (r.link === true) { const p = d.hist[i - 1]; if (p && p.kind === 'row') { if (!p.id) p.id = uid(); r.link = p.id; } else r.link = ''; }
-      else if (!r.link) r.link = '';
-    });
-    const blankOnly = d.hist.length <= 1 && d.hist.every(r => r.kind === 'row' && !r.y && !r.m && !r.t && !r.kt && !r.dept && !r.course && !r.ev);
-    if (!d.hist.length || blankOnly) d.hist = presetHist();
+    if (legacy) {   // 旧形式のデータを引き継ぐ
+      const old = oldHist.map(r => {
+        if (r.kind === 'head') return r;
+        if (r.kind) return r;
+        if (!r.y && !r.m && ['学歴','職歴','以上'].includes(r.t)) return {kind:'head', t:r.t};
+        return {kind:'row', y:r.y||'', m:r.m||'', t:r.t||'', ev:''};
+      });
+      old.forEach((r, i) => { if (r.kind === 'row' && r.link === true) { const q = old[i - 1]; if (q && q.kind === 'row') { if (!q.id) q.id = uid(); r.link = q.id; } else r.link = ''; } });
+      Object.assign(d, migrateHist(old));
+    }
+    delete d.hist;
+    d.edu = Object.assign(blankEdu(), d.edu);
+    d.edu.jhs = Object.assign({t:'', ey:'', em:''}, d.edu.jhs, {_a:(d.edu.jhs && d.edu.jhs._a) || {}});
+    ['hs', 'col'].forEach(k => { d.edu[k] = Object.assign(blankSchool(), d.edu[k]); d.edu[k]._a = d.edu[k]._a || {}; });
+    d.work = Object.assign({on:false, rows:[]}, d.work); d.work.rows = d.work.rows.map(r => Object.assign(blankWork(), r));
     ['addrFurigana', 'cFurigana'].forEach(k => { if (d[k] === 'undefined') d[k] = ''; });   // 旧データの不具合で入った文字を消す
     d.lic = (d.lic || []).map(r => Object.assign(blankLic(), r));
     if (!d.lic.length) d.lic = [blankLic()];
@@ -352,20 +387,23 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const E = (b.mo > 4 || (b.mo === 4 && b.d >= 2) ? b.y : b.y - 1) + 6;   // 小学校入学の年
     return {'中学校|卒業':[E + 9, 3], '高校|入学':[E + 9, 4], '高校|卒業':[E + 12, 3], '専門学校|入学':[E + 12, 4], '専門学校|卒業':[E + 14, 3]};
   }
-  const rowKey = r => r.pre ? r.pre + '|' + (r.link ? '卒業' : r.ev) : '';
   function histExample() {
     const sample = !ymd(data.birth), st = straight(sample ? '2006-05-10' : data.birth);
     const f = k => st[k][0] + '年' + st[k][1] + '月';
-    $('histEx').textContent = (sample ? '例）2006年5月10日生まれ（ストレート）の場合：' : 'ストレートの場合（生年月日から自動入力）：')
-      + `中学校卒業 ${f('中学校|卒業')} ／ 高校入学 ${f('高校|入学')} ／ 高校卒業 ${f('高校|卒業')} ／ 専門学校入学 ${f('専門学校|入学')} ／ 専門学校卒業見込 ${f('専門学校|卒業')}（2年制）`;
+    $('histEx').textContent = '入学・卒業の年月は、生年月日から自動で入ります（現役で進学した場合の年月）。専門学校は2年制で計算します。違う場合は直してください。\n'
+      + (sample ? '例）2006年5月10日生まれの場合：' : 'あなたの場合：')
+      + `中学校卒業 ${f('中学校|卒業')} ／ 高校入学 ${f('高校|入学')} ／ 高校卒業 ${f('高校|卒業')} ／ 専門学校入学 ${f('専門学校|入学')} ／ 専門学校卒業 ${f('専門学校|卒業')}`;
   }
   function autoYears() {
     const st = straight(data.birth); histExample(); if (!st) return;
-    data.hist.forEach(r => {
-      const t = r.kind === 'row' && st[rowKey(r)]; if (!t) return;
+    const fill = (b, yk, mk, t) => {   // 空か、前回の自動入力のままの欄だけ書き換える
       const y = String(t[0]), m = String(t[1]);
-      if ((!r.y && !r.m) || (r.y === r._ay && r.m === r._am)) { r.y = y; r.m = m; r._ay = y; r._am = m; }   // 空か、前回の自動入力のままの行だけ
-    });
+      if ((!b[yk] && !b[mk]) || (b[yk] === b._a[yk] && b[mk] === b._a[mk])) { b[yk] = y; b[mk] = m; b._a[yk] = y; b._a[mk] = m; }
+    };
+    const e = data.edu;
+    fill(e.jhs, 'ey', 'em', st['中学校|卒業']);
+    fill(e.hs, 'sy', 'sm', st['高校|入学']); fill(e.hs, 'ey', 'em', st['高校|卒業']);
+    fill(e.col, 'sy', 'sm', st['専門学校|入学']); fill(e.col, 'ey', 'em', st['専門学校|卒業']);
     buildHist(); save(); render();
   }
   // ---- 郵便番号→住所の自動入力（同梱データ data/zipdata.txt を読むだけ。入力した番号は外に出ません） ----
@@ -446,41 +484,43 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
   function buildHist() {
     const box = $('histList'); box.textContent = '';
-    const GRAD = [['卒業','卒業'], ['卒業見込','卒業見込']];
-    $('btnAddGaku').hidden = data.hist.some(r => r.kind === 'head' && r.t === '学歴');   // 見出しがあるときは出さない
-    data.hist.forEach((r, i) => {
-      if (r.kind === 'head') {
-        box.append(h('div', {class:'card head'}, h('b', {textContent:'見出し：' + r.t}), moveBtns(data.hist, i, buildHist)));
-        return;
+    const ym = (label, o, yk, mk, extra) => h('div', {class:'cl'}, h('span', {class:'yl', textContent:label}), input(o, yk, '年', 'w56', 'numeric'), input(o, mk, '月', 'w44', 'numeric'), ...(extra || []));
+    const names = (o, tk, dk, ck, tph) => [h('div', {class:'cl'}, input(o, tk, tph)), h('div', {class:'cl'}, input(o, dk, '学科（空欄可）'), input(o, ck, 'コース（空欄可）'))];
+    const e = data.edu;
+    box.append(h('div', {class:'card'}, h('div', {class:'ct', textContent:'中学校（卒業のみ記載）'}), h('div', {class:'cl'}, input(e.jhs, 't', '中学校名')), ym('卒業', e.jhs, 'ey', 'em')));
+    [['hs', '高校', '高校名', '卒業'], ['col', '専門学校', '専門学校名', '卒業']].forEach(([k, title, ph, gl]) => {
+      const b = e[k], kids = [h('div', {class:'ct', textContent:title}), ...names(b, 't', 'dept', 'course', ph), ym('入学', b, 'sy', 'sm')];
+      const chk = h('input', {type:'checkbox', checked:!!b.trans});
+      chk.addEventListener('change', () => { b.trans = chk.checked; save(); buildHist(); render(); });
+      kids.push(h('label', {class:'chk'}, chk, '転入学した（2校目が出ます）'));
+      if (b.trans) {
+        const ty = input(b, 'ty', '年', 'w56', 'numeric'), tm = input(b, 'tm', '月', 'w44', 'numeric');
+        kids.push(h('div', {class:'cl'}, h('span', {class:'yl', textContent:'転学'}), ty, tm));
+        kids.push(h('div', {class:'ct', textContent:title + '（2校目）'}), ...names(b, 't2', 'dept2', 'course2', ph));
+        const iy = input(b, 'iy', '年', 'w56', 'numeric'), im = input(b, 'im', '月', 'w44', 'numeric');
+        kids.push(h('div', {class:'cl'}, h('span', {class:'yl', textContent:'転入学'}), iy, im));
+        const sync = () => {   // 転入学を入れたら、転学にも同じ年月を仮入力（手で直せます）
+          if ((!b.ty && !b.tm) || (b.ty === b._a.ty && b.tm === b._a.tm)) { b.ty = b.iy; b.tm = b.im; b._a.ty = b.iy; b._a.tm = b.im; ty.value = b.iy; tm.value = b.im; save(); render(); }
+        };
+        iy.addEventListener('input', sync); im.addEventListener('input', sync);
       }
-      const kids = [];
-      const src = r.link ? data.hist.find(x => x.kind === 'row' && x.id === r.link && x !== r) : null;   // 学校の引き継ぎ元
-      if (r.pre) kids.push(h('div', {class:'ct', textContent:r.pre + '　' + (r.link ? '卒業' : r.ev)}));
-      const top = [input(r,'y','年','w56','numeric'), input(r,'m','月','w44','numeric')];
-      if (r.link) top.push(select(r,'ev',GRAD));
-      else if (!r.pre) top.push(select(r,'ev',[['','（入学・卒業など）'], ...EVENTS.map(e => [e,e])]));
-      top.push(...moveBtns(data.hist, i, buildHist));
-      kids.push(h('div', {class:'cl'}, top));
-      if (r.link) {
-        const opts = [['', '（学校を自分で入力する）']];
-        data.hist.forEach(x => { if (x.kind === 'row' && x !== r && !x.link && x.id) opts.push([x.id, [x.pre, x.t, x.ev].filter(Boolean).join(' ')]); });
-        kids.push(h('label', {textContent:'学校・学科を引き継ぐ行'}), select(r,'link',opts), 
-          ...(src ? [] : [h('div', {class:'note err', textContent:'引き継ぎ元がありません。学校を選ぶか、自分で入力してください'})]));
-        const sel = kids[kids.length - (src ? 1 : 2)];
-        sel.addEventListener('change', buildHist);
-      }
-      if (r.link && src) {
-        kids.push(h('div', {class:'note', textContent:'学校名・学科・コースは、選んだ行と同じ内容が入ります'}));
-      } else {
-        kids.push(h('div', {class:'cl'}, input(r,'t', r.pre ? r.pre + '名' : '学校名・会社名')));
-        if (!r.pre) kids.push(h('div', {class:'cl'}, select(r,'kt',[['','課程なし'], ...COURSES.map(c => [c, c + '課程'])])));
-        if (r.ev !== '卒業' || !r.pre) kids.push(h('div', {class:'cl'}, input(r,'dept','学科（2行目）'), input(r,'course','コース（3行目）')));
-      }
-      const ab = h('button', {class:'addbelow', textContent:'＋この下に行を追加（転学・転入学など）'});
-      ab.addEventListener('click', () => { data.hist.splice(i + 1, 0, Object.assign(blankRow(), {ev:'転入学'})); save(); buildHist(); render(); });
-      kids.push(ab);
+      kids.push(ym(gl, b, 'ey', 'em'));
+      if (k === 'col') kids.push(h('div', {class:'note', textContent:'卒業年月が今月以降なら、履歴書には「卒業見込」と自動で表示されます'}));
       box.append(h('div', {class:'card'}, kids));
     });
+    const wc = h('input', {type:'checkbox', checked:!!data.work.on});
+    wc.addEventListener('change', () => { data.work.on = wc.checked; if (wc.checked && !data.work.rows.length) data.work.rows.push(blankWork()); save(); buildHist(); render(); });
+    const wk = [h('label', {class:'chk'}, wc, '職歴がある（チェックすると入力欄と「職歴」の見出しが出ます）')];
+    if (data.work.on) {
+      data.work.rows.forEach((r, i) => {
+        wk.push(h('div', {class:'cl'}, input(r, 'y', '年', 'w56', 'numeric'), input(r, 'm', '月', 'w44', 'numeric'), select(r, 'ev', [['', '（入社・退社など）'], ...['入社','退社'].map(x => [x, x])]), moveBtns(data.work.rows, i, buildHist)));
+        wk.push(h('div', {class:'cl'}, input(r, 't', '会社名')));
+      });
+      const ab = h('button', {textContent:'＋職歴の行を追加'});
+      ab.addEventListener('click', () => { data.work.rows.push(blankWork()); save(); buildHist(); render(); });
+      wk.push(ab);
+    }
+    box.append(h('div', {class:'card'}, h('div', {class:'ct', textContent:'職歴'}), wk));
   }
   function buildLic() {
     const box = $('licList'); box.textContent = '';
@@ -496,8 +536,6 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const a = e.target.closest('[data-add]'); if (!a) return;
     const v = a.dataset.add;
     if (v === 'lic') { data.lic.push(blankLic()); buildLic(); }
-    else if (v === 'row') { data.hist.push(blankRow()); buildHist(); }
-    else { data.hist[v === '学歴' ? 'unshift' : 'push']({kind:'head', t:v}); buildHist(); }   // 「学歴」は先頭に入れる
     save(); render();
   });
 
@@ -827,13 +865,11 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
     // ---- 学歴・職歴：行に展開（学科・コースは2・3行目、1文字ずつ字下げ） ----
     const lines = [];
-    d.hist.forEach((r, i) => {
+    histRows(d).forEach((r, i) => {
       if (r.kind === 'head') { lines.push({head:r.t}); return; }
-      const p = r.link ? d.hist.find(x => x.kind === 'row' && x.id === r.link && x !== r) : null;
-      if (p) r = Object.assign({}, r, {t:p.t, kt:p.kt, dept:p.dept, course:p.course});   // 卒業の行は、引き継ぎ元の学校・学科・コースを使う
-      const first = (r.t || '') + (r.kt ? ' ' + r.kt + '課程' : '');
+      const first = r.t || '';
       const subs = [r.dept, r.course].filter(Boolean);
-      const empty = p ? (!r.y && !r.m) : (!r.y && !r.m && !first && !subs.length && !(r.ev && !r.pre));
+      const empty = !r.y && !r.m && !first && !subs.length;
       if (empty) return;
       lines.push({y:r.y, m:r.m, text:first, indent:0});
       subs.forEach((s, i) => lines.push({text:s, indent:i + 1}));
@@ -900,7 +936,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     if (histOver > 0) errs.push(`学歴・職歴が${HIST_ROWS - 1}行を超えています（「以上」が最後の入力行の次の行に入るため、最大13行までです。あと${histOver}行減らしてください。学科・コースも行を使います）`);
     if (licOver > 0) errs.push(`免許・資格が${LIC_ROWS}行を超えています（あと${licOver}行減らしてください）`);
     Object.entries(NUMF).forEach(([k, label]) => { if (!okNum(data[k] || '')) errs.push(`${label}は数字のみ入力してください`); });
-    if ([...data.hist, ...data.lic].some(r => r.kind !== 'head' && (!okDigits(r.y || '') || !okDigits(r.m || '')))) errs.push('年・月は数字のみ入力してください');
+    if ([...histRows(data), ...data.lic].some(r => r.kind !== 'head' && (!okDigits(r.y || '') || !okDigits(r.m || '')))) errs.push('年・月は数字のみ入力してください');
     // 住所：1行なら枠の中央、2行以上なら郵便番号の下から
     document.querySelectorAll('.t.af').forEach(box => {
       const n = lineCount(box.querySelector('.addr'));
