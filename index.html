@@ -804,7 +804,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     }
     const phone = (ya, yb, name, val) => {   // 電話・携帯：枠の中央に配置
       T(L.x3 + 0.8, ya + 0.8, 8, 2.4, name, '', fs(6.2));
-      T(L.x3, ya, L.x4 - L.x3, yb - ya, esc(val), 'c', fs(10.5));
+      T(L.x3, ya + 2.4, L.x4 - L.x3, yb - ya - 2.4, esc(val), 'c', fs(10.5));   // 小さい見出しの下の領域の中央
     };
     phone(L.r3, L.t1, '電話', d.tel); phone(L.t1, L.r6, '携帯', d.mobile);
     phone(L.r6, L.t2, '電話', d.cTel); phone(L.t2, L.yA1, '携帯', d.cMobile);
@@ -815,12 +815,16 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     else T(ph.x, ph.y, ph.w, ph.h, '<div style="text-align:center;line-height:1.1;color:#333;">写真をはる位置<br><br>(30×40mm)<br><br><span style="font-size:6.2pt">○本人単身／胸から上</span></div>', 'c', fs(8.5));
 
     // 縦書きの見出し（1文字ずつ様式どおりの位置に）
-    const vlabel = (cx, chars) => chars.forEach(([c, cy]) => T(cx - 2.2, cy - 2.2, 4.4, 4.4, c, 'c', fs(9.6)));
-    vlabel((L.x0 + L.x1) / 2, [['学',149.8],['歴',166.4],['・',176.0],['職',186.4],['歴',203.3]]);
-    vlabel((R.x0 + R.x1) / 2, [['免',31.3],['許',39.6],['・',45.2],['資',50.3],['格',58.1],['等',65.9]]);
-    vlabel((R.x0 + R.x1) / 2, [['趣',95.7],['味',103.0],['・',106.6],['特',110.8],['技',116.6],['等',122.7]]);
-    vlabel((R.x0 + R.x1) / 2, [['志',159.8],['望',168.9],['の',177.8],['動',186.9],['機',195.7]]);
-    vlabel((R.x0 + R.x1) / 2, [['備',222.5],['考',230.8]]);
+    // 縦書きの見出しは、文字のかたまりが枠（top〜bottom）の上下ちょうど中央になるように置く
+    const vlabel = (cx, chars, top, bottom) => {
+      const dy = (top + bottom) / 2 - (chars[0][1] + chars[chars.length - 1][1]) / 2;
+      chars.forEach(([c, cy]) => T(cx - 2.2, cy + dy - 2.2, 4.4, 4.4, c, 'c', fs(9.6)));
+    };
+    vlabel((L.x0 + L.x1) / 2, [['学',149.8],['歴',166.4],['・',176.0],['職',186.4],['歴',203.3]], L.yB0, L.yB1);
+    vlabel((R.x0 + R.x1) / 2, [['免',31.3],['許',39.6],['・',45.2],['資',50.3],['格',58.1],['等',65.9]], R.y0, R.y1);
+    vlabel((R.x0 + R.x1) / 2, [['趣',95.7],['味',103.0],['・',106.6],['特',110.8],['技',116.6],['等',122.7]], R.y1, R.y2);
+    vlabel((R.x0 + R.x1) / 2, [['志',159.8],['望',168.9],['の',177.8],['動',186.9],['機',195.7]], R.y2, R.y3);
+    vlabel((R.x0 + R.x1) / 2, [['備',222.5],['考',230.8]], R.y3, R.y4);
 
     // ---- 学歴・職歴：行に展開（学科・コースは2・3行目、1文字ずつ字下げ） ----
     const lines = [];
@@ -860,10 +864,10 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const licOver = lics.length - LIC_ROWS;
     for (let k = 0; k < LIC_ROWS; k++) {
       const r = lics[k] || {}; const ry = R.yh + k * pL;
-      dateRow(ry, pL, BODY_PT, 9, '', 247.2, {y: r.y || '', m: r.m || ''});
+      dateRow(ry, pL, BODY_PT, 9, '', R.x2 - 2.65, {y: r.y || '', m: r.m || ''});
       const suf = r.lk === '検定' ? '合格' : (r.lk === '資格' ? '取得' : '');
       const sw = suf ? suf.length * BODY_MM + 2 : 0;
-      const rx = R.x4 - 2.4;
+      const rx = R.x4 - 2.55;
       if (r.t) T(R.x2 + 2.5, ry, rx - sw - R.x2 - 2.5, pL, esc(r.t), 'fit', fs(BODY_PT) + `" data-lbl="免許・資格の${k + 1}行目`);
       if (suf) T(rx - sw, ry, sw, pL, suf, 'r', fs(BODY_PT));
     }
@@ -912,7 +916,6 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       const el = document.querySelector(`[data-prose="${key}"]`);
       const text = data[key] || '';
       const used = text ? lineCount(el) : 0;
-      if (key === 'remarks') el.style.paddingTop = text ? Math.max(0, ((G.R.y4 - G.R.y3) - used * p.lh) / 2) + 'mm' : '0';   // 備考は文章のかたまりを枠の上下中央に置く（上下の余白をそろえる）
       const over = el.scrollHeight > el.clientHeight + 1 || used > p.lines;   // 枠の高さ、または規定の行数をこえたらエラー
       const short = key !== 'remarks' && used < p.lines;
       const guide = key === 'remarks' ? `目安 ${Math.floor(p.cap / 10) * 10}文字まで` : `目安 ${p.lo}〜${p.hi}文字`;
