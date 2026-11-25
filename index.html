@@ -105,10 +105,11 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .cols > div { min-width:0; }
 .cols > div + div { border-left:.2mm solid #000; }
 .colhd { height:9.2mm; line-height:9.2mm; font-size:8.5pt; padding:0 2mm; border-bottom:.2mm dotted #555; white-space:nowrap; }
-.ruled { line-height:9.2mm; font-size:10.5pt; padding:0 2mm; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden;
-  background-image:
-    repeating-linear-gradient(90deg, #fff 0, #fff .5mm, transparent .5mm, transparent 1mm),
-    repeating-linear-gradient(180deg, transparent 0, transparent 9mm, #666 9mm, #666 9.2mm); }
+.ruled { position:relative; overflow:hidden; font-size:10.5pt; }
+.ruled .rl { position:absolute; left:0; right:0; top:0; bottom:0; display:flex; flex-direction:column; }
+.ruled .rl i { display:block; flex:none; height:9.2mm; border-bottom:.2mm dotted #555; }
+.ruled .rl i:last-child { border-bottom:none; }
+.ruled .rt { position:relative; line-height:9.2mm; padding:0 2mm; white-space:pre-wrap; overflow-wrap:anywhere; }
 .s2 .ruled { height:64.3mm; }
 .s3 .ruled { height:100%; }
 .plain { padding:2mm 2.5mm; white-space:pre-wrap; overflow-wrap:anywhere; overflow:hidden; line-height:1.6; font-size:10.5pt; height:100%; }
@@ -368,6 +369,10 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     return {html, over: rows.length > N};
   }
 
+  // 罫線入りのテキスト欄（罫線は個別の要素で描く：PDFでの欠けを防ぐため）
+  const ruled = (text, lines, label) =>
+    `<div class="ruled" data-fit="${label}"><div class="rl">${'<i></i>'.repeat(lines)}</div><div class="rt">${esc(text)}</div></div>`;
+
   function render() {
     const d = data, dt = ymd(d.date), b = ymd(d.birth);
     const photo = d.photo
@@ -397,7 +402,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     <div class="dot furi" style="grid-area:4/2/5/4">${esc(d.addrFurigana)}</div>
     <div class="lbl el" style="grid-area:5/1/7/2">現住所</div>
     <div class="blk" style="grid-area:5/2/7/4"><div class="zip">〒(<span class="zn">${esc(d.zip)}</span>)</div><div class="addr">${esc(d.addr)}</div></div>
-    <div class="lbl el" style="grid-area:7/1/8/2;font-size:7pt">E-mailアドレス</div>
+    <div class="lbl el" style="grid-area:7/1/8/2;font-size:6.3pt;letter-spacing:0;white-space:nowrap;padding:0">E-mailアドレス</div>
     <div style="grid-area:7/2/8/4;font-size:10pt">${esc(d.email)}</div>
     <div class="lbl el dot" style="grid-area:8/1/9/2">ふりがな</div>
     <div class="dot furi" style="grid-area:8/2/9/4">${esc(d.cFurigana)}</div>
@@ -428,13 +433,13 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     <div class="sec s2">
       <div class="vl">趣味・特技等</div>
       <div class="cols">
-        <div><div class="colhd">趣味・得意な学科・スポーツ等</div><div class="ruled" data-fit="趣味・得意な学科・スポーツ等">${esc(d.hobby)}</div></div>
-        <div><div class="colhd">特技・自己啓発等</div><div class="ruled" data-fit="特技・自己啓発等">${esc(d.skill)}</div></div>
+        <div><div class="colhd">趣味・得意な学科・スポーツ等</div>${ruled(d.hobby, 7, '趣味・得意な学科・スポーツ等')}</div>
+        <div><div class="colhd">特技・自己啓発等</div>${ruled(d.skill, 7, '特技・自己啓発等')}</div>
       </div>
     </div>
     <div class="sec s3">
       <div class="vl">志望の動機</div>
-      <div class="ruled" data-fit="志望の動機">${esc(d.motive)}</div>
+      ${ruled(d.motive, 9, '志望の動機')}
     </div>
     <div class="sec s4">
       <div class="vl">備考</div>
