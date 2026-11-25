@@ -250,8 +250,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       if (b.sy || b.sm || b.t || b.dept || b.course) row(b.sy, b.sm, b.t, '入学', b.dept, b.course);
       let name = b.t, dept = b.dept, course = b.course;
       if (b.trans) {
-        if (b.ty || b.tm || b.t) row(b.ty, b.tm, b.t, '転学');
-        if (b.iy || b.im || b.t2 || b.dept2 || b.course2) row(b.iy, b.im, b.t2, '転入学', b.dept2, b.course2);
+        if (b.ty || b.tm || b.t) row(b.ty, b.tm, b.t, mikomi ? '退学' : '転学');   // 専門学校は、学校の制度による移籍（以前の学校は退学の扱い）
+        if (b.iy || b.im || b.t2 || b.dept2 || b.course2) row(b.iy, b.im, b.t2, mikomi ? '移籍' : '転入学', b.dept2, b.course2);
         name = b.t2; dept = b.dept2; course = b.course2;
       }
       if (b.ey || b.em) {
@@ -489,17 +489,18 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const e = data.edu;
     box.append(h('div', {class:'card'}, h('div', {class:'ct', textContent:'中学校（卒業のみ記載）'}), h('div', {class:'cl'}, input(e.jhs, 't', '中学校名')), ym('卒業', e.jhs, 'ey', 'em')));
     [['hs', '高校', '高校名', '卒業'], ['col', '専門学校', '専門学校名', '卒業']].forEach(([k, title, ph, gl]) => {
+      const wOut = k === 'col' ? '退学' : '転学', wIn = k === 'col' ? '移籍' : '転入学';
       const b = e[k], kids = [h('div', {class:'ct', textContent:title}), ...names(b, 't', 'dept', 'course', ph), ym('入学', b, 'sy', 'sm')];
       const chk = h('input', {type:'checkbox', checked:!!b.trans});
       chk.addEventListener('change', () => { b.trans = chk.checked; save(); buildHist(); render(); });
-      kids.push(h('label', {class:'chk'}, chk, '転入学した（2校目が出ます）'));
+      kids.push(h('label', {class:'chk'}, chk, (k === 'col' ? '学校の制度で移籍した（以前の学校は退学の扱い・移籍先が出ます）' : '転入学した（2校目が出ます）')));
       if (b.trans) {
         const ty = input(b, 'ty', '年', 'w56', 'numeric'), tm = input(b, 'tm', '月', 'w44', 'numeric');
-        kids.push(h('div', {class:'cl'}, h('span', {class:'yl', textContent:'転学'}), ty, tm));
-        kids.push(h('div', {class:'ct', textContent:title + '（2校目）'}), ...names(b, 't2', 'dept2', 'course2', ph));
+        kids.push(h('div', {class:'cl'}, h('span', {class:'yl', textContent:wOut}), ty, tm));
+        kids.push(h('div', {class:'ct', textContent:title + (k === 'col' ? '（移籍先）' : '（2校目）')}), ...names(b, 't2', 'dept2', 'course2', ph));
         const iy = input(b, 'iy', '年', 'w56', 'numeric'), im = input(b, 'im', '月', 'w44', 'numeric');
-        kids.push(h('div', {class:'cl'}, h('span', {class:'yl', textContent:'転入学'}), iy, im));
-        const sync = () => {   // 転入学を入れたら、転学にも同じ年月を仮入力（手で直せます）
+        kids.push(h('div', {class:'cl'}, h('span', {class:'yl', textContent:wIn}), iy, im));
+        const sync = () => {   // 転入学（移籍）を入れたら、転学（退学）にも同じ年月を仮入力（手で直せます）
           if ((!b.ty && !b.tm) || (b.ty === b._a.ty && b.tm === b._a.tm)) { b.ty = b.iy; b.tm = b.im; b._a.ty = b.iy; b._a.tm = b.im; ty.value = b.iy; tm.value = b.im; save(); render(); }
         };
         iy.addEventListener('input', sync); im.addEventListener('input', sync);
