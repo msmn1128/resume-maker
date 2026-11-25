@@ -4,13 +4,15 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- 外部への通信を一切禁止（入力データが外に出ないことをブラウザ側で保証） -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <title>履歴書メーカー</title>
 <style>
+/* IPAex明朝（JIS X 0208の範囲に軽量化）。ライセンス: fonts/IPA_Font_License_Agreement_v1.0.txt */
+@font-face { font-family:"IPAexMincho"; src:url("fonts/ipaexm-subset.woff") format("woff"); font-display:swap; }
 :root { --accent:#1f5fbf; --bg:#f3f4f6; }
 * { box-sizing:border-box; }
-body { margin:0; font-family:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif; background:var(--bg); color:#111; }
+body { margin:0; font-family:"IPAexMincho","Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif; background:var(--bg); color:#111; }
 .ui { font-family:-apple-system,"Hiragino Sans","Yu Gothic",sans-serif; }
 .app { display:grid; grid-template-columns:minmax(320px,440px) 1fr; min-height:100vh; }
 .panel { background:#fff; border-right:1px solid #ddd; padding:20px; overflow-y:auto; height:100vh; position:sticky; top:0; }
@@ -348,7 +350,9 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     if (!confirm('この端末に保存された入力内容をすべて消去します。よろしいですか？')) return;
     localStorage.removeItem(KEY); data = blank(); fillForm(); render();
   });
-  $('btnPrint').addEventListener('click', () => window.print());
+  // フォントの読み込みが終わってから印刷（読み込み前だと代替フォントで出力されるため）
+  $('btnPrint').addEventListener('click', () => { document.fonts.ready.then(() => { render(); window.print(); }); });
+  document.fonts.ready.then(render); // 読み込み後に「枠に収まらない」判定をやり直す
 
   // ---- プレビュー描画 ----
   const ymd = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? {y:+m[1], mo:+m[2], d:+m[3]} : null; };

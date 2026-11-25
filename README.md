@@ -9,3 +9,8 @@
 ## 構成
 
 `index.html` のみ（外部ライブラリ・外部フォントなし）
+
+## フォント
+
+IPAex明朝（JIS X 0208の範囲に軽量化）を `fonts/` に同梱しています。
+ライセンスは `fonts/IPA_Font_License_Agreement_v1.0.txt` を参照してください。
