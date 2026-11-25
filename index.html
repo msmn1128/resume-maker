@@ -251,7 +251,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       let name = b.t, dept = b.dept, course = b.course;
       if (b.trans) {
         if (b.ty || b.tm || b.t) row(b.ty, b.tm, b.t, mikomi ? '退学' : '転学');   // 専門学校は、学校の制度による移籍（以前の学校は退学の扱い）
-        if (b.iy || b.im || b.t2 || b.dept2 || b.course2) row(b.iy, b.im, b.t2, mikomi ? '移籍' : '転入学', b.dept2, b.course2);
+        if (b.iy || b.im || b.t2 || b.dept2 || b.course2) row(b.iy, b.im, b.t2, mikomi ? '入学' : '転入学', b.dept2, b.course2);
         name = b.t2; dept = b.dept2; course = b.course2;
       }
       if (b.ey || b.em) {
@@ -489,7 +489,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const e = data.edu;
     box.append(h('div', {class:'card'}, h('div', {class:'ct', textContent:'中学校（卒業のみ記載）'}), h('div', {class:'cl'}, input(e.jhs, 't', '中学校名')), ym('卒業', e.jhs, 'ey', 'em')));
     [['hs', '高校', '高校名', '卒業'], ['col', '専門学校', '専門学校名', '卒業']].forEach(([k, title, ph, gl]) => {
-      const wOut = k === 'col' ? '退学' : '転学', wIn = k === 'col' ? '移籍' : '転入学';
+      const wOut = k === 'col' ? '退学' : '転学', wIn = k === 'col' ? '入学' : '転入学';
       const b = e[k], kids = [h('div', {class:'ct', textContent:title}), ...names(b, 't', 'dept', 'course', ph), ym('入学', b, 'sy', 'sm')];
       const chk = h('input', {type:'checkbox', checked:!!b.trans});
       chk.addEventListener('change', () => { b.trans = chk.checked; save(); buildHist(); render(); });
