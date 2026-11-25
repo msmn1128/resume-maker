@@ -916,7 +916,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       const el = document.querySelector(`[data-prose="${key}"]`);
       const text = data[key] || '';
       const used = text ? lineCount(el) : 0;
-      const over = key !== 'remarks' && (el.scrollHeight > el.clientHeight + 1 || used > p.lines);   // 枠の高さ、または規定の行数をこえたらエラー（備考は目安だけでエラーにしない）
+      const over = el.scrollHeight > el.clientHeight + 1 || used > p.lines;   // 枠の高さ、または規定の行数をこえたらエラー
       const short = key !== 'remarks' && used < p.lines;
       const guide = key === 'remarks' ? `目安 ${Math.floor(p.cap / 10) * 10}文字まで` : `目安 ${p.lo}〜${p.hi}文字`;
       $('cnt_' + key).textContent = `${guide}　現在 ${Math.ceil(weight(text))}文字`;
