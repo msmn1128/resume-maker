@@ -771,7 +771,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     T(48.7, by, 14, bh, b ? b.y : '', 'r', fs(10)); T(63, by, 3.6, bh, '年', '', fs(10));
     T(70, by, 5.8, bh, b ? b.mo : '', 'r', fs(10)); T(76.2, by, 3.6, bh, '月', '', fs(10));
     T(84.5, by, 5.9, bh, b ? b.d : '', 'r', fs(10)); T(90.8, by, 8, bh, '日生', '', fs(10));
-    T(106.3, by, 6.5, bh, '(満', '', fs(10)); T(112.5, by, 7, bh, b ? age(d.birth) : '', 'r', fs(10)); T(119.9, by, 5, bh, '歳)', '', fs(10));
+    T(106.3, by, 6.5, bh, '(満', '', fs(10)); T(111.2, by, 9.2, bh, b ? age(d.birth) : '', 'c', fs(10)); T(119.9, by, 5, bh, '歳)', '', fs(10));   // 年齢は「(満」と「歳)」のあいだの中央
 
     furi(Y[3], Y[4], L.x3, d.addrFurigana);
     const zipRow = (yTop, zip) => {   // 〒(　　-　　)
