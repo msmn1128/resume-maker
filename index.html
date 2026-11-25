@@ -375,19 +375,20 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
   const age = b => { const d = new Date(), x = ymd(b); if (!x) return ''; let a = d.getFullYear() - x.y; if (d.getMonth()+1 < x.mo || (d.getMonth()+1 === x.mo && d.getDate() < x.d)) a--; return a; };
 
   // 文章欄：{lines行 × 1行の文字数}を様式の寸法から算出（これが規定文字数）
+  // 文章欄はすべて8ptに統一（見た目をそろえるため）。1行の文字数・規定文字数はこのサイズから算出する。
+  const PROSE_PT = 8;
   const PROSE = {
-    hobby:   { label:'趣味・得意な学科・スポーツ等', w:G.R.x3 - G.R.x1,           lines:7, lh:8.0 },
-    skill:   { label:'特技・自己啓発等',             w:G.R.x4 - G.R.x3,           lines:7, lh:8.0 },
-    motive:  { label:'志望の動機',                   w:G.R.x4 - G.R.x1,           lines:9, lh:(G.R.y3 - G.R.y2) / 9 },
-    remarks: { label:'備考',                         w:G.R.x4 - G.R.x1,           lines:3, lh:6.0 }
+    hobby:   { label:'趣味・得意な学科・スポーツ等', w:G.R.x3 - G.R.x1, lines:7, lh:8.0 },
+    skill:   { label:'特技・自己啓発等',             w:G.R.x4 - G.R.x3, lines:7, lh:8.0 },
+    motive:  { label:'志望の動機',                   w:G.R.x4 - G.R.x1, lines:9, lh:(G.R.y3 - G.R.y2) / 9, loMin:370 },
+    remarks: { label:'備考',                         w:G.R.x4 - G.R.x1, lines:3, lh:6.0 }
   };
-  Object.values(PROSE).forEach(p => {
-    p.cpl = Math.floor((p.w - 3.4) / BODY_MM); p.cap = p.cpl * p.lines;
-    // 目安の文字数：最後の行に届く最少文字数〜枠いっぱいを、10文字刻みのキリのいい数字にする
-    p.lo = Math.ceil(((p.lines - 1) * p.cpl + 1) / 10) * 10;
-    p.hi = Math.floor(p.cap / 10) * 10;
-  });
   Object.entries(PROSE).forEach(([key, p]) => {
+    p.pt = PROSE_PT;
+    p.cpl = Math.floor((p.w - 3.4) / (p.pt * PT)); p.cap = p.cpl * p.lines;
+    // 目安の文字数：最後の行に届く最少文字数〜枠いっぱいを、10文字刻みのキリのいい数字にする
+    p.lo = Math.max(p.loMin || 0, Math.ceil(((p.lines - 1) * p.cpl + 1) / 10) * 10);   // loMin：最低でもこの文字数を目安にする
+    p.hi = Math.floor(p.cap / 10) * 10;
     if (key !== 'remarks') $('f_' + key).placeholder = `目安：${p.lo}〜${p.hi}文字（${p.lines}行目まで書く）`;
   });
   const weight = s => [...s].reduce((a, c) => a + (c === '\n' ? 0 : (c.charCodeAt(0) < 256 ? 0.5 : 1)), 0);
@@ -543,7 +544,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
     }
     T(R.x1 + 1.7, R.y1, R.x3 - R.x1, pS3, '趣味・得意な学科・スポーツ等', '', fs(8.1));
     T(R.x3 + 1.7, R.y1, R.x4 - R.x3, pS3, '特技・自己啓発等', '', fs(8.1));
-    const prose = (key, x, y, w, hh) => T(x, y, w, hh, esc(d[key]), 'tb', fs(BODY_PT) + `line-height:${PROSE[key].lh}mm;` + `" data-prose="${key}`);
+    const prose = (key, x, y, w, hh) => T(x, y, w, hh, esc(d[key]), 'tb', fs(PROSE[key].pt) + `line-height:${PROSE[key].lh}mm;` + `" data-prose="${key}`);
     prose('hobby', R.x1, R.y1 + pS3, R.x3 - R.x1, pS3 * 7);
     prose('skill', R.x3, R.y1 + pS3, R.x4 - R.x3, pS3 * 7);
     prose('motive', R.x1, R.y2, R.x4 - R.x1, R.y3 - R.y2);
