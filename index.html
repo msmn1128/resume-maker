@@ -474,7 +474,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
         kids.push(h('div', {class:'note', textContent:'学校名・学科・コースは、選んだ行と同じ内容が入ります'}));
       } else {
         kids.push(h('div', {class:'cl'}, input(r,'t', r.pre ? r.pre + '名' : '学校名・会社名')));
-        if (!r.pre || r.pre === '高校') kids.push(h('div', {class:'cl'}, select(r,'kt',[['','課程なし'], ...COURSES.map(c => [c, c + '課程'])])));
+        if (!r.pre) kids.push(h('div', {class:'cl'}, select(r,'kt',[['','課程なし'], ...COURSES.map(c => [c, c + '課程'])])));
         if (r.ev !== '卒業' || !r.pre) kids.push(h('div', {class:'cl'}, input(r,'dept','学科（2行目）'), input(r,'course','コース（3行目）')));
       }
       const ab = h('button', {class:'addbelow', textContent:'＋この下に行を追加（転学・転入学など）'});
