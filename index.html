@@ -76,6 +76,7 @@ button.danger { color:#b3261e; border-color:#e6b8b4; }
 .addr { line-height:4.2mm; white-space:normal; overflow-wrap:anywhere; }
 
 details.sec { border:1px solid #e1e1e1; border-radius:10px; margin:0 0 12px; padding:0 12px 12px; min-width:0; }
+input.bad { border-color:#b3261e !important; background:#fff3f2 !important; }
 details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); padding:12px 0 4px; cursor:pointer; }
 .bar { margin-bottom:10px; }
 .bar .pdfres:empty { display:none; }
@@ -155,21 +156,21 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     </details>
 
     <details class="sec" open><summary>現住所</summary>
-      <label for="f_zip">郵便番号</label><input type="text" id="f_zip" inputmode="numeric" autocomplete="off">
+      <label for="f_zip">郵便番号（数字のみ・ハイフンは自動）</label><input type="text" id="f_zip" inputmode="numeric" autocomplete="off">
       <label for="f_addr">住所</label><input type="text" id="f_addr" autocomplete="off">
       <label for="f_addrFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_addrFurigana" autocomplete="off">
-      <label for="f_tel">電話</label><input type="tel" id="f_tel" inputmode="numeric" autocomplete="off">
-      <label for="f_mobile">携帯</label><input type="tel" id="f_mobile" inputmode="numeric" autocomplete="off">
+      <label for="f_tel">電話（数字のみ・ハイフンは自動）</label><input type="tel" id="f_tel" inputmode="numeric" autocomplete="off">
+      <label for="f_mobile">携帯（数字のみ・ハイフンは自動）</label><input type="tel" id="f_mobile" inputmode="numeric" autocomplete="off">
       <label for="f_email">E-mailアドレス</label><input type="email" id="f_email" autocomplete="off">
     </details>
 
     <details class="sec" open><summary>連絡先（休暇中の住所など）</summary>
       <label class="chk"><input type="checkbox" id="f_same"> 現住所と同じ（枠の中央に「同　上」と表示）</label>
-      <label for="f_cZip">郵便番号</label><input type="text" id="f_cZip" inputmode="numeric" autocomplete="off">
+      <label for="f_cZip">郵便番号（数字のみ・ハイフンは自動）</label><input type="text" id="f_cZip" inputmode="numeric" autocomplete="off">
       <label for="f_cAddr">住所</label><input type="text" id="f_cAddr" autocomplete="off">
       <label for="f_cFurigana">ふりがな（住所を入力してから）</label><input type="text" id="f_cFurigana" autocomplete="off">
-      <label for="f_cTel">電話</label><input type="tel" id="f_cTel" inputmode="numeric" autocomplete="off">
-      <label for="f_cMobile">携帯</label><input type="tel" id="f_cMobile" inputmode="numeric" autocomplete="off">
+      <label for="f_cTel">電話（数字のみ・ハイフンは自動）</label><input type="tel" id="f_cTel" inputmode="numeric" autocomplete="off">
+      <label for="f_cMobile">携帯（数字のみ・ハイフンは自動）</label><input type="tel" id="f_cMobile" inputmode="numeric" autocomplete="off">
     </details>
 
     <details class="sec" open><summary>学歴・職歴</summary>
@@ -179,13 +180,13 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
         <button data-add="学歴">＋「学歴」の見出し</button>
         <button data-add="職歴">＋「職歴」の見出し</button>
       </div>
-      <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（使わない行は空のままで大丈夫です）。最後の行には「以上」が自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
+      <div class="note">「学歴」の見出しと、中学校・高校・専門学校の行は最初から入っています（年・月は数字のみ。使わない行は空のままで大丈夫です）。最後の行には「以上」が自動で入るので、内容は13行までです。学科・コースを入れると2・3行目を使います。転学・転入学は各行の「＋この下に行を追加」から足せます。</div>
     </details>
 
     <details class="sec" open><summary>免許・資格等（最大7行）</summary>
       <div id="licList"></div>
       <div class="btns"><button data-add="lic">＋行を追加</button></div>
-      <div class="note">「検定」を選ぶと「合格」、「資格」を選ぶと「取得」を右寄せで入れます。</div>
+      <div class="note">年・月は数字のみ入力してください。「検定」を選ぶと「合格」、「資格」を選ぶと「取得」を右寄せで入れます。</div>
     </details>
 
     <details class="sec" open><summary>趣味・得意な学科・スポーツ等</summary>
@@ -316,6 +317,19 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     return parts.join('-');
   };
   const halfNum = s => half(s).replace(/(\d)[－ー−‐-]/g, '$1-');        // 住所：全角数字→半角（数字につづくハイフンも半角に）
+  // 数字だけの欄：数字以外（ハイフンと全角数字は可）が入るとエラーにする。入力した文字は消さずに残す
+  const NUMF = {zip:'郵便番号', cZip:'連絡先の郵便番号', tel:'電話', mobile:'携帯', cTel:'連絡先の電話', cMobile:'連絡先の携帯'};
+  const okNum = s => /^[0-9０-９\-－ー]*$/.test(s);
+  const okDigits = s => /^[0-9０-９]*$/.test(s);
+  Object.keys(NUMF).forEach(k => {
+    const n = document.createElement('div'); n.className = 'note err'; n.id = 'e_' + k;
+    $('f_' + k).insertAdjacentElement('afterend', n);
+  });
+  function numMark(k) {
+    const el = $('f_' + k), bad = !okNum(el.value);
+    el.classList.toggle('bad', bad);
+    $('e_' + k).textContent = bad ? '数字のみ入力してください（ハイフンは自動で入ります）' : '';
+  }
   const FMT = {zip:fmtZip, cZip:fmtZip, tel:fmtTel, mobile:fmtTel, cTel:fmtTel, cMobile:fmtTel, addr:halfNum, cAddr:halfNum};
   // 整形したあとも、カーソルが「同じ数字の後ろ」に残るようにする
   function applyFmt(el, fn) {
@@ -341,6 +355,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   }
   const autoFilled = {};   // 自動入力した住所（あとから手で直した住所は上書きしない）
   async function zipToAddr(zipKey, addrKey) {
+    if (!okNum(data[zipKey])) return;
     const z = digits(data[zipKey]); if (z.length !== 7) return;
     const m = await loadZip(); const a = m && m.get(z); if (!a) return;
     if (digits(data[zipKey]) !== z) return;                       // 待っている間に番号が変わった
@@ -353,7 +368,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   simple.forEach(k => {
     const el = $('f_' + k);
     el.addEventListener('input', () => {
-      if (FMT[k]) applyFmt(el, FMT[k]); data[k] = el.value; save(); render();
+      if (NUMF[k]) numMark(k);
+      if (FMT[k] && (!NUMF[k] || okNum(el.value))) applyFmt(el, FMT[k]); data[k] = el.value; save(); render();
       if (k === 'zip') zipToAddr('zip', 'addr'); else if (k === 'cZip') zipToAddr('cZip', 'cAddr');
     });
   });
@@ -362,6 +378,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
   function fillForm() {
     simple.forEach(k => $('f_' + k).value = data[k] || '');
+    Object.keys(NUMF).forEach(numMark);
     $('f_same').checked = !!data.same; syncSame();
     buildHist(); buildLic(); updateThumb();
   }
@@ -375,9 +392,9 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
   }
   const input = (obj, key, ph, cls, mode) => {
     const e = h('input', {type:'text', placeholder:ph, value:obj[key] || '', autocomplete:'off', className:cls || ''});
-    if (mode) e.inputMode = mode;
+    if (mode) { e.inputMode = mode; if (mode === 'numeric') e.classList.toggle('bad', !okDigits(e.value)); }
     e.addEventListener('input', () => {
-      if (mode === 'numeric') { const v = digits(e.value); if (v !== e.value) e.value = v; }   // 年・月は半角数字だけ
+      if (mode === 'numeric') { const v = half(e.value); if (okDigits(v) && v !== e.value) e.value = v; e.classList.toggle('bad', !okDigits(e.value)); }   // 年・月は数字のみ（全角は半角に直す）
       obj[key] = e.value; save(); render(); });
     return e;
   };
@@ -836,6 +853,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const errs = [], warns = [];
     if (histOver > 0) errs.push(`学歴・職歴が${HIST_ROWS - 1}行を超えています（最後の行は「以上」用です。あと${histOver}行減らしてください。学科・コースも行を使います）`);
     if (licOver > 0) errs.push(`免許・資格が${LIC_ROWS}行を超えています（あと${licOver}行減らしてください）`);
+    Object.entries(NUMF).forEach(([k, label]) => { if (!okNum(data[k] || '')) errs.push(`${label}は数字のみ入力してください`); });
+    if ([...data.hist, ...data.lic].some(r => r.kind !== 'head' && (!okDigits(r.y || '') || !okDigits(r.m || '')))) errs.push('年・月は数字のみ入力してください');
     // 住所：1行なら枠の中央、2行以上なら郵便番号の下から
     document.querySelectorAll('.t.af').forEach(box => {
       const n = lineCount(box.querySelector('.addr'));
