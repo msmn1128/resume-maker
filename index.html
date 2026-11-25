@@ -846,9 +846,8 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
     // 写真
     const ph = G.photo;
-    // 写真は枠の90%の大きさで中央に入れる（写真があるときは枠線を描かない）
-    const PH = 0.9;
-    if (d.photo) T(ph.x + ph.w * (1 - PH) / 2, ph.y + ph.h * (1 - PH) / 2, ph.w * PH, ph.h * PH, '', '', `background:url('${d.photo}') center/cover no-repeat;`);
+    // 写真は枠いっぱい（30×40mm）に入れる。写真があるときは枠線を描かない
+    if (d.photo) T(ph.x, ph.y, ph.w, ph.h, '', '', `background:url('${d.photo}') center/cover no-repeat;`);
     else T(ph.x, ph.y, ph.w, ph.h, '<div style="text-align:center;line-height:1.1;color:#333;">写真をはる位置<br><br>(30×40mm)<br><br><span style="font-size:6.2pt">○本人単身／胸から上</span></div>', 'c', fs(8.5));
 
     // 縦書きの見出し（1文字ずつ様式どおりの位置に）
