@@ -759,12 +759,13 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
     const lab = (i, txt, pt) => T(L.x0, Y[i], L.x1 - L.x0, Y[i+1] - Y[i], txt, 'c', fs(pt));
     // ふりがな欄：文字のまわりの余白を、上下左右ともそろえる（上下の余白は約1mm＝左右も同じ）
     const FM = 1.0;
-    const furi = (ya, yb, xr, txt) => T(L.x1 + FM - 0.45, ya + 0.1, xr - L.x1 - FM * 2 + 0.6, yb - ya, esc(txt), '', fs(8.5));
+    const LX = L.x1 + 0.95;   // 基本情報欄の文字の左端（ふりがな・氏名・住所・メールすべて共通）
+    const furi = (ya, yb, xr, txt) => T(LX, ya + 0.1, xr - LX - 0.9, yb - ya, esc(txt), '', fs(8.5));
     lab(0, 'ふりがな', 8); lab(1, '氏　名', 9.6); lab(2, '生年月日', 9.6); lab(3, 'ふりがな', 8);
     lab(4, '現住所', 9.6); lab(5, 'E-mailアドレス', 5.6); lab(6, 'ふりがな', 8); lab(7, '連絡先', 9.6);
 
     furi(Y[0], Y[1], L.x2, d.furigana);
-    T(L.x1 + 3, Y[1], L.x2 - L.x1 - 4, Y[2] - Y[1], esc(d.name), '', fs(17));
+    T(LX + 0.1, Y[1], L.x2 - LX - 1.5, Y[2] - Y[1], esc(d.name), '', fs(17));
     // 生年月日「　年　月　日生　(満　歳)」
     const by = Y[2], bh = Y[3] - Y[2];
     T(48.7, by, 14, bh, b ? b.y : '', 'r', fs(10)); T(63, by, 3.6, bh, '年', '', fs(10));
@@ -774,15 +775,15 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
 
     furi(Y[3], Y[4], L.x3, d.addrFurigana);
     const zipRow = (yTop, zip) => {   // 〒(　　-　　)
-      T(41.3, yTop + 0.7, 6, 3.8, '〒(', '', fs(9));
-      T(46.9, yTop + 0.7, 16, 3.8, esc(zip), 'c', fs(9));
-      T(71.4, yTop + 0.7, 3, 3.8, ')', '', fs(9));
+      T(LX, yTop + 0.7, 6, 3.8, '〒(', '', fs(9));
+      T(LX + 5.6, yTop + 0.7, 16, 3.8, esc(zip), 'c', fs(9));
+      T(LX + 30.1, yTop + 0.7, 3, 3.8, ')', '', fs(9));
     };
     const addrBox = (yA, yB, text, lbl) =>
-      T(L.x1 + 2, yA, L.x3 - L.x1 - 4, yB - yA, `<div class="afi"><span class="addr">${esc(text)}</span></div>`, 'af fit', fs(10) + `" data-lbl="${lbl}`);
+      T(LX, yA, L.x3 - LX - 1.5, yB - yA, `<div class="afi"><span class="addr">${esc(text)}</span></div>`, 'af fit', fs(10) + `" data-lbl="${lbl}`);
     zipRow(Y[4], d.zip);
     addrBox(Y[4], Y[5], d.addr, '現住所');
-    T(L.x1 + 2, Y[5], L.x3 - L.x1 - 3, Y[6] - Y[5], esc(d.email), '', fs(9.5));
+    T(LX, Y[5], L.x3 - LX - 1.5, Y[6] - Y[5], esc(d.email), '', fs(9.5));
 
     furi(Y[6], Y[7], L.x3, d.same ? '' : d.cFurigana);
     if (d.same) {
@@ -792,7 +793,7 @@ details.sec > summary { font-size:15px; font-weight:700; color:var(--accent); pa
       addrBox(Y[7], Y[8], d.cAddr, '連絡先の住所');
     }
     const phone = (ya, yb, name, val) => {   // 電話・携帯：枠の中央に配置
-      T(L.x3 + 1.2, ya + 0.8, 8, 2.4, name, '', fs(6.2));
+      T(L.x3 + 0.8, ya + 0.8, 8, 2.4, name, '', fs(6.2));
       T(L.x3, ya, L.x4 - L.x3, yb - ya, esc(val), 'c', fs(10.5));
     };
     phone(L.r3, L.t1, '電話', d.tel); phone(L.t1, L.r6, '携帯', d.mobile);
